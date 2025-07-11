@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Data Barang & Kasir Toko ADS</title>
     <link rel="stylesheet" href="style_ads.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- PERBAIKAN: Library crypto-js yang tidak digunakan telah dihapus -->
 </head>
 <body>
 
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <!-- TAMPILAN 1: MANAJEMEN BARANG (VERSI BARU) -->
+            <!-- TAMPILAN 1: MANAJEMEN BARANG (KODE SUDAH DIPERBAIKI) -->
             <section id="menu-manajemen-barang">
                 <h2>Manajemen Barang</h2>
                 <div class="form-container">
@@ -66,16 +66,21 @@
                             <div class="form-group"><label for="Nama_Barang">Nama Barang</label><input type="text" id="Nama_Barang" name="Nama_Barang" required></div>
                             <div class="form-group"><label for="Kategori_Barang">Kategori</label><input type="text" id="Kategori_Barang" name="Kategori_Barang"></div>
                         </div>
+                        
+                        <!-- ========================================================== -->
+                        <!-- === PERBAIKAN: Atribut 'name' dan 'id' diubah di sini === -->
+                        <!-- ========================================================== -->
                         <div class="form-row">
-                            <div class="form-group"><label for="Stok_Dasar">Stok (Pcs atau Kg)</label><input type="number" id="Stok_Dasar" name="Stok_Dasar" min="0" value="0" step="any" required></div>
-                            <div class="form-group"><label for="Konversi_Paket">Barang per Paket (Lusin, Pak)</label><input type="number" id="Konversi_Paket" name="Konversi_Paket" min="0" value="0" step="any"></div>
-                            <div class="form-group"><label for="Konversi_Karton">Barang per Karton/Sak</label><input type="number" id="Konversi_Karton" name="Konversi_Karton" min="0" value="0" step="any"></div>
+                            <div class="form-group"><label for="Stok_Pcs">Stok (Pcs atau Kg)</label><input type="number" id="Stok_Pcs" name="Stok_Pcs" min="0" value="0" step="any" required></div>
+                            <div class="form-group"><label for="Pcs_Per_Lusin">Barang per Paket (Lusin, Pak)</label><input type="number" id="Pcs_Per_Lusin" name="Pcs_Per_Lusin" min="0" value="0" step="any"></div>
+                            <div class="form-group"><label for="Pcs_Per_Karton">Barang per Karton/Sak</label><input type="number" id="Pcs_Per_Karton" name="Pcs_Per_Karton" min="0" value="0" step="any"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group"><label for="Harga_Dasar">Harga Dasar (Pcs atau Kg)</label><input type="number" id="Harga_Dasar" name="Harga_Dasar" min="0" value="0" step="any" required></div>
-                            <div class="form-group"><label for="Harga_Paket">Harga Paket</label><input type="number" id="Harga_Paket" name="Harga_Paket" min="0" value="0" step="any"></div>
+                            <div class="form-group"><label for="Harga_Pcs">Harga Dasar (Pcs atau Kg)</label><input type="number" id="Harga_Pcs" name="Harga_Pcs" min="0" value="0" step="any" required></div>
+                            <div class="form-group"><label for="Harga_Lusin">Harga Paket</label><input type="number" id="Harga_Lusin" name="Harga_Lusin" min="0" value="0" step="any"></div>
                             <div class="form-group"><label for="Harga_Karton">Harga Karton/Sak</label><input type="number" id="Harga_Karton" name="Harga_Karton" min="0" value="0" step="any"></div>
                         </div>
+                        
                         <div class="form-actions">
                             <button type="submit" id="btn-tambah">Tambah Barang</button>
                             <button type="submit" id="btn-simpan" class="hidden">Simpan Perubahan</button>
@@ -183,22 +188,22 @@
                         <input type="hidden" id="ID_Pengguna" name="ID_Pengguna">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="Username">Username</label>
+                                <label for="pengguna-username">Username</label>
                                 <input type="text" id="pengguna-username" name="Username" required>
                             </div>
                             <div class="form-group">
-                                <label for="Nama_Lengkap">Nama Lengkap</label>
+                                <label for="pengguna-nama">Nama Lengkap</label>
                                 <input type="text" id="pengguna-nama" name="Nama_Lengkap" required>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group password-wrapper">
-                                <label for="Password_Baru">Password (isi untuk pengguna baru / jika ingin diubah)</label>
+                                <label for="pengguna-password">Password (isi untuk pengguna baru / jika ingin diubah)</label>
                                 <input type="password" id="pengguna-password" name="Password_Baru">
                                 <span class="toggle-password">👁️</span>
                             </div>
                             <div class="form-group">
-                                <label for="Role">Role</label>
+                                <label for="pengguna-role">Role</label>
                                 <select id="pengguna-role" name="Role" required>
                                     <option value="kasir">Kasir</option>
                                     <option value="admin">Admin</option>
