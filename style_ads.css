@@ -164,3 +164,42 @@ th { font-weight: 600; }
     header h1 { font-size: 1.3em; text-align: center; }
     .tabel-container { overflow-x: auto; }
 }
+
+/* ==================================================================== */
+/* === GAYA CETAK STRUK (RAMAH SELULER & SESUAI TAMPILAN) === */
+/* ==================================================================== */
+
+@media print {
+    /* 1. Atur halaman cetak agar sesuai ukuran kertas struk */
+    @page {
+        size: 80mm auto; /* Lebar 80mm (standar thermal), tinggi otomatis */
+        margin: 5mm;     /* Jarak 0.5cm dari semua tepi kertas */
+    }
+
+    /* 2. Sembunyikan semua elemen di halaman secara default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* 3. Tampilkan KEMBALI HANYA area struk dan semua elemen di dalamnya */
+    #area-struk, #area-struk * {
+        visibility: visible;
+    }
+
+    /* 4. Posisikan area struk di bagian paling atas halaman cetak */
+    #area-struk {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+    }
+
+    /* 5. Pastikan tombol aksi tidak ikut tercetak */
+    .struk-actions {
+        display: none !important;
+    }
+}
