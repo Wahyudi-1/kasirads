@@ -3,10 +3,10 @@
 // ====================================================================
 
 import { AppState, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
-import { handleLoginApi, batalkanTransaksiApi } from './api.js'; // PERBAIKAN: Impor fungsi baru
+import { handleLoginApi, batalkanTransaksiApi } from './api.js';
 
 // ====================================================================
-// === PERBAIKAN: Variabel untuk menyimpan state transaksi terakhir ===
+// === Variabel untuk menyimpan state transaksi terakhir ===
 // ====================================================================
 export let dataTransaksiTerakhir = null;
 export let idTransaksiTerakhir = null;
@@ -45,9 +45,7 @@ export function checkLoginStatus() {
     }
 }
 
-export async function handleLogin(e) {
-    e.preventDefault();
-    const formData = new FormData(formLogin);
+export async function handleLogin(formData) {
     const button = formLogin.querySelector('button');
     button.disabled = true;
     button.textContent = 'Memproses...';
@@ -341,13 +339,7 @@ export function hitungKembalian() {
     btnProsesTransaksi.disabled = !(kembali >= 0 && AppState.keranjang.length > 0);
 }
 
-/**
- * === PERBAIKAN DI SINI ===
- * Fungsi ini sekarang menyimpan data transaksi ke variabel global
- * agar bisa diakses oleh tombol "Ubah Transaksi".
- */
 export function tampilkanStruk(dataTransaksi, idTransaksi) {
-    // Simpan data untuk digunakan nanti oleh fitur "Ubah Transaksi"
     dataTransaksiTerakhir = dataTransaksi;
     idTransaksiTerakhir = idTransaksi;
 
@@ -436,9 +428,6 @@ export function togglePasswordVisibility(target) {
     }
 }
 
-// ====================================================================
-// === FUNGSI BARU UNTUK PROSES UBAH TRANSAKSI ===
-// ====================================================================
 export async function handleBatalDanUlangi() {
     if (!idTransaksiTerakhir) {
         alert("Tidak ada data transaksi terakhir untuk diubah.");
@@ -457,23 +446,77 @@ export async function handleBatalDanUlangi() {
   
     if (result.status === 'sukses') {
       tampilkanNotifikasi(result.message, 'sukses');
-  
-      // Isi kembali keranjang dengan data dari transaksi yang dibatalkan
       AppState.keranjang = dataTransaksiTerakhir.keranjang;
-      
-      // Kembali ke halaman kasir
       areaStruk.classList.add('hidden');
       menuTransaksi.classList.remove('hidden');
-      
-      // Render ulang keranjang, hitung total, dan siapkan input pembayaran
       renderKeranjang();
-      inputBayar.value = dataTransaksiTerakhir.jumlahBayar; // Isi kembali jumlah bayar sebelumnya
+      inputBayar.value = dataTransaksiTerakhir.jumlahBayar;
       hitungKembalian();
       
     } else {
       tampilkanNotifikasi('Gagal: ' + result.message, 'error');
-      // Aktifkan kembali tombol jika gagal
       btnUbah.disabled = false;
       btnUbah.textContent = 'Ubah Transaksi';
     }
+}
+
+
+// ====================================================================
+// === FUNGSI BARU UNTUK FITUR KIRIM WHATSAPP ===
+// ====================================================================
+
+function formatStrukUntukWhatsApp(dataTransaksi, idTransaksi) {
+    let teksStruk = `*Toko ADS Gedangan*\n\n`;
+    teksStruk += `Terima kasih telah berbelanja!\n`;
+    teksStruk += `Berikut adalah rincian belanja Anda:\n\n`;
+    teksStruk += `ID Transaksi: *${idTransaksi}*\n`;
+    teksStruk += `Waktu: ${new Date().toLocaleString('id-ID')}\n`;
+    teksStruk += `Kasir: ${dataTransaksi.kasir}\n`;
+    teksStruk += `-----------------------------------\n`;
+
+    dataTransaksi.keranjang.forEach(item => {
+        teksStruk += `*${item.namaBarang}*\n`;
+        teksStruk += `${item.jumlah} ${item.satuan} x ${formatRupiah(item.hargaSatuan)} = *${formatRupiah(item.subtotal)}*\n`;
+    });
+
+    teksStruk += `-----------------------------------\n`;
+    teksStruk += `Total Belanja: *${formatRupiah(dataTransaksi.totalBelanja)}*\n`;
+    teksStruk += `Bayar: ${formatRupiah(dataTransaksi.jumlahBayar)}\n`;
+    teksStruk += `Kembali: ${formatRupiah(dataTransaksi.kembalian)}\n\n`;
+    teksStruk += `_Semoga Berkah ^_^_\n`;
+    return encodeURIComponent(teksStruk);
+}
+
+function formatNomorWhatsApp(nomor) {
+    if (!nomor) return null;
+    let nomorBersih = nomor.replace(/\D/g, '');
+    if (nomorBersih.startsWith('0')) {
+        return '62' + nomorBersih.substring(1);
+    }
+    if (nomorBersih.startsWith('62')) {
+        return nomorBersih;
+    }
+    if (nomorBersih.length >= 10 && nomorBersih.length <= 15) {
+      return nomorBersih;
+    }
+    return null;
+}
+
+export function handleKirimWhatsApp() {
+    if (!idTransaksiTerakhir || !dataTransaksiTerakhir) {
+        alert("Data transaksi tidak ditemukan. Silakan proses transaksi terlebih dahulu.");
+        return;
+    }
+    const nomorTujuan = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 081234567890):");
+    if (nomorTujuan === null || nomorTujuan.trim() === '') {
+        return;
+    }
+    const nomorTerformat = formatNomorWhatsApp(nomorTujuan);
+    if (!nomorTerformat) {
+        alert("Format nomor WhatsApp tidak valid. Pastikan Anda memasukkan nomor yang benar.");
+        return;
+    }
+    const pesanStruk = formatStrukUntukWhatsApp(dataTransaksiTerakhir, idTransaksiTerakhir);
+    const urlWhatsApp = `https://api.whatsapp.com/send?phone=${nomorTerformat}&text=${pesanStruk}`;
+    window.open(urlWhatsApp, '_blank');
 }
