@@ -525,10 +525,24 @@ function handleTambahKeKeranjang(e) {
         keranjang.push(itemDiKeranjang);
     }
     
+   function handleTambahKeKeranjang(e) {
+    e.preventDefault();
+    // ... (semua logika validasi dan penambahan ke keranjang yang sudah ada) ...
+    
+    // 1. Render ulang tampilan keranjang dengan item baru
     renderKeranjang();
+    
+    // 2. Sembunyikan kembali form detail item (Nama barang, jumlah, satuan)
     formTambahKeranjang.classList.add('hidden');
-    inputJumlahKasir.value = 1;
-    inputCari.focus();
+    
+    // 3. Reset state untuk pencarian berikutnya
+    itemTerpilihDataInput.value = ''; // Hapus data item yang tadi dipilih
+    namaBarangTerpilihSpan.textContent = ''; // Kosongkan tampilan nama barang
+    inputJumlahKasir.value = 1; // Kembalikan jumlah ke 1
+    
+    // 4. Siapkan input pencarian utama
+    inputCari.value = ''; // Kosongkan kotak pencarian
+    inputCari.focus(); // Pindahkan kursor langsung ke kotak pencarian
 }
 
 function renderKeranjang() {
