@@ -44,7 +44,6 @@ export const btnSimpan = document.getElementById('btn-simpan');
 export const btnBatal = document.getElementById('btn-batal');
 export const tabelBarangBody = document.getElementById('tabel-barang-body');
 export const loadingManajemen = document.getElementById('loading-manajemen');
-// === PERBAIKAN: Menambahkan selektor untuk kontrol pencarian baru ===
 export const inputCariManajemen = document.getElementById('input-cari-manajemen');
 export const btnCariManajemen = document.getElementById('btn-cari-manajemen');
 export const btnTampilkanSemua = document.getElementById('btn-tampilkan-semua');
@@ -93,19 +92,19 @@ formLogin.addEventListener('submit', (e) => {
 });
 btnLogout.addEventListener('click', ui.handleLogout);
 
-// === PERBAIKAN: Logika navigasi diubah untuk mendukung "Search-First" ===
+// --- Event Listener Navigasi ---
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
-    // Data tidak dimuat otomatis, menunggu input pengguna
+    // Data tidak dimuat otomatis, menunggu input pengguna.
 });
 
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    // Memastikan semua data barang dimuat ke cache untuk pencarian di halaman kasir
+    // Memastikan semua data barang dimuat ke cache untuk pencarian di halaman kasir.
     if (AppState.barang.length === 0) {
-        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data
+        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data.
     }
 });
 
@@ -114,13 +113,14 @@ navLaporan.addEventListener('click', () => {
     ui.showMenu(menuLaporan);
     api.muatLaporan();
 });
+
 navPengguna.addEventListener('click', () => {
     ui.setActiveNav(navPengguna);
     ui.showMenu(menuPengguna);
     api.muatDataPengguna();
 });
 
-// === PERBAIKAN: Menambahkan event listener untuk kontrol pencarian baru ===
+// --- Event Listener untuk Kontrol Pencarian di Halaman Manajemen ---
 btnCariManajemen.addEventListener('click', () => {
     const query = inputCariManajemen.value;
     api.muatDataBarang(query);
@@ -136,19 +136,17 @@ inputCariManajemen.addEventListener('keypress', (e) => {
 btnTampilkanSemua.addEventListener('click', () => {
     if (confirm("Memuat semua data mungkin akan lambat jika database besar. Lanjutkan?")) {
         inputCariManajemen.value = '';
-        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data
+        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data.
     }
 });
 
-
-// --- Event Listener Lainnya ---
+// --- Event Listener CRUD Barang & Pengguna ---
 formBarang.addEventListener('submit', api.handleFormSubmit);
 btnBatal.addEventListener('click', ui.keluarModeEdit);
 tabelBarangBody.addEventListener('click', (e) => {
     const target = e.target;
     if (target.classList.contains('btn-ubah')) {
         const id = target.dataset.id;
-        // Ambil data dari data yang sedang ditampilkan (disimpan sementara di ui.js)
         const dataBarang = ui.getDataFromLastRender(id); 
         if (dataBarang) ui.masukModeEdit(dataBarang);
     }
@@ -177,9 +175,18 @@ tabelPenggunaBody.addEventListener('click', (e) => {
     }
 });
 
+// --- Event Listener Lainnya ---
+let timeoutRekomendasi;
 inputKodeBarang.addEventListener('keyup', (e) => {
-    // Fitur ini akan berfungsi dengan baik jika 'Tampilkan Semua' sudah diklik
-    ui.rekomendasiKodeBarang(inputKodeBarang.value);
+    clearTimeout(timeoutRekomendasi);
+    const query = inputKodeBarang.value;
+    timeoutRekomendasi = setTimeout(() => {
+        if (query.length > 0) {
+            ui.rekomendasiKodeBarang(query);
+        } else {
+            rekomendasiKodeDiv.classList.add('hidden');
+        }
+    }, 400);
 });
 
 document.addEventListener('click', (e) => {
