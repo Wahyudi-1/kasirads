@@ -149,6 +149,12 @@ th { font-weight: 600; }
     user-select: none;
     font-size: 1.2em;
     color: #777;
+
+    /* Tambahkan ini untuk mereset style tombol */
+    background: transparent;
+    border: none;
+    padding: 0;
+    line-height: 1; /* Agar posisi vertikalnya pas */
 }
 
 /* Gaya Responsif untuk Tampilan HP */
