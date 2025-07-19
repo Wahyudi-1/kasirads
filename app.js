@@ -7,10 +7,12 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAKa3ErQip9zxi2bVZaTb6K47SR_pHZrwgEfZZA--Kqc9iqLRSJzJZ2Hdw-LYeNjG5/exec";
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcl63KsQDd4U8nxETR6A_4ttUlGBMsw0g1rqFy2uSgGKvbFF4rfj3f4cmfeQTh7IxR/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
 
 export const API_ACTIONS = {
-    LOGIN: 'loginUser', GET_BARANG: 'getSemuaBarang', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi'
+    LOGIN: 'loginUser', GET_BARANG: 'getSemuaBarang', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
+    // === PERBAIKAN: Menambahkan konstanta action baru ===
+    BATALKAN_TRANSAKSI: 'batalkanTransaksi'
 };
 
 export const AppState = {
@@ -70,13 +72,20 @@ export const areaStruk = document.getElementById('area-struk');
 export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
 export const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
+// === PERBAIKAN: Menambahkan seleksi untuk tombol baru ===
+export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
 
 // ====================================================================
 // EVENT LISTENERS UTAMA - Titik Masuk Aplikasi
 // ====================================================================
 
 document.addEventListener('DOMContentLoaded', ui.checkLoginStatus);
-formLogin.addEventListener('submit', ui.handleLogin);
+formLogin.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(formLogin);
+    formData.append('action', API_ACTIONS.LOGIN);
+    ui.handleLogin(formData);
+});
 btnLogout.addEventListener('click', ui.handleLogout);
 
 navManajemen.addEventListener('click', () => {
@@ -187,6 +196,8 @@ tabelKeranjangBody.addEventListener('change', (e) => {
 });
 
 btnCetakStruk.addEventListener('click', ui.cetakStruk);
+
+// PERBAIKAN: Event listener untuk 'Transaksi Baru' tetap ada
 btnTransaksiBaru.addEventListener('click', () => {
     AppState.keranjang = [];
     ui.renderKeranjang();
@@ -194,4 +205,9 @@ btnTransaksiBaru.addEventListener('click', () => {
     ui.hitungKembalian();
     menuTransaksi.classList.remove('hidden');
     areaStruk.classList.add('hidden');
+});
+
+// === PERBAIKAN: Menambahkan event listener baru untuk tombol "Ubah Transaksi" ===
+btnUbahTransaksi.addEventListener('click', () => {
+    ui.handleBatalDanUlangi();
 });
