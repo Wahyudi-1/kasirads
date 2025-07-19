@@ -3,29 +3,23 @@
 // ====================================================================
 
 import { AppState, SCRIPT_URL, API_ACTIONS } from './app.js';
-import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, populasiFilterKasir } from './ui.js';
+import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, checkLoginStatus, populasiFilterKasir } from './ui.js';
 
 // --- FUNGSI-FUNGSI API ---
 
-/**
- * Memuat semua data penting (barang, laporan, pengguna) secara bersamaan setelah login.
- */
 export async function muatSemuaDataAwal() {
     console.log("Memulai pemuatan semua data awal...");
     try {
-        // Jalankan semua permintaan data secara paralel untuk efisiensi
         const [hasilBarang, hasilLaporan, hasilPengguna] = await Promise.all([
             fetch(`${SCRIPT_URL}?action=getBarang`),
             fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`),
             fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`)
         ]);
 
-        // Proses semua respons menjadi JSON
         const barang = await hasilBarang.json();
         const laporan = await hasilLaporan.json();
         const pengguna = await hasilPengguna.json();
 
-        // Simpan semua data ke cache AppState
         if (barang.status === 'sukses') AppState.barang = barang.data;
         if (laporan.status === 'sukses') AppState.laporan = laporan.data;
         if (pengguna.status === 'sukses') AppState.pengguna = pengguna.data;
@@ -40,7 +34,6 @@ export async function muatSemuaDataAwal() {
     }
 }
 
-
 export async function handleLoginApi(dataUntukKirim) {
     try {
         const response = await fetch(SCRIPT_URL, { method: 'POST', body: dataUntukKirim });
@@ -48,7 +41,6 @@ export async function handleLoginApi(dataUntukKirim) {
         if (result.status === 'sukses') {
             sessionStorage.setItem('user', JSON.stringify(result.user));
             AppState.currentUser = result.user;
-            // checkLoginStatus dipindahkan ke ui.js agar berjalan setelah data dimuat
             return { success: true };
         } else {
             return { success: false, message: result.message };
@@ -58,13 +50,8 @@ export async function handleLoginApi(dataUntukKirim) {
     }
 }
 
-/**
- * Memfilter dan merender data barang dari cache yang sudah ada.
- * @param {string} query - Kata kunci pencarian (opsional).
- */
 export function muatDataBarang(query = "") {
     let dataToRender = AppState.barang;
-
     if (query && query.trim() !== "") {
         const lowerCaseQuery = query.toLowerCase();
         dataToRender = AppState.barang.filter(item => {
@@ -94,9 +81,7 @@ export async function handleFormSubmit(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formBarang.reset();
             keluarModeEdit();
-            // Muat ulang semua data agar cache sinkron
             await muatSemuaDataAwal();
-            // Render ulang tabel dengan data lengkap yang baru
             renderTabelBarang(AppState.barang);
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
@@ -120,9 +105,7 @@ export async function hapusBarang(id, target) {
         const result = await response.json();
         if (result.status === 'sukses') {
             tampilkanNotifikasi(result.message, 'sukses');
-            // Muat ulang semua data agar cache sinkron
             await muatSemuaDataAwal();
-            // Render ulang tabel dengan data lengkap yang baru
             renderTabelBarang(AppState.barang);
         } else {
             tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
@@ -134,9 +117,6 @@ export async function hapusBarang(id, target) {
     }
 }
 
-/**
- * Merender tabel pengguna dari data yang ada di cache.
- */
 export function muatDataPengguna() {
     renderTabelPengguna();
 }
@@ -174,7 +154,6 @@ export async function handleFormSubmitPengguna(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formPengguna.reset();
             keluarModeEditPengguna();
-            // Muat ulang semua data agar cache sinkron
             await muatSemuaDataAwal();
             renderTabelPengguna();
         } else {
@@ -199,7 +178,6 @@ export async function hapusPengguna(id, target) {
         const result = await response.json();
         if (result.status === 'sukses') {
             tampilkanNotifikasi(result.message, 'sukses');
-            // Muat ulang semua data agar cache sinkron
             await muatSemuaDataAwal();
             renderTabelPengguna();
         } else {
@@ -240,7 +218,6 @@ export async function prosesTransaksi() {
         if (result.status === 'sukses') {
             document.getElementById('menu-transaksi').classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
-            // Kosongkan cache agar data baru dimuat saat login berikutnya atau refresh manual
             AppState.barang = [];
             AppState.laporan = [];
         } else {
@@ -255,12 +232,8 @@ export async function prosesTransaksi() {
     }
 }
 
-/**
- * Mempersiapkan UI filter laporan dari data yang ada di cache.
- */
 export function muatLaporan() {
     populasiFilterKasir();
-    // Tabel sengaja dibiarkan kosong sampai filter diterapkan oleh pengguna
     renderTabelLaporan([]);
 }
 
