@@ -106,7 +106,7 @@ navManajemen.addEventListener('click', () => {
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    // Tidak perlu aksi, data sudah ada di AppState.
+    // Tidak perlu aksi, data sudah dijamin ada di AppState.
 });
 
 navLaporan.addEventListener('click', () => {
