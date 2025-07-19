@@ -24,21 +24,33 @@ export async function handleLoginApi(dataUntukKirim) {
     }
 }
 
-export async function muatDataBarang() {
-    if (AppState.barang.length > 0) {
-        renderTabelBarang();
-        return;
-    }
+/**
+ * === PERBAIKAN: Fungsi ini sekarang lebih fleksibel ===
+ * Memuat data barang dari backend. Bisa dengan query pencarian atau tanpa query (memuat semua).
+ * @param {string} query - Kata kunci pencarian (opsional).
+ */
+export async function muatDataBarang(query = "") {
     const loadingManajemen = document.getElementById('loading-manajemen');
     const tabelBarangBody = document.getElementById('tabel-barang-body');
     loadingManajemen.classList.remove('hidden');
     tabelBarangBody.innerHTML = '';
+
+    // Menggunakan action baru 'getBarang' yang bisa menerima query
+    let url = `${SCRIPT_URL}?action=getBarang`;
+    if (query && query.trim() !== "") {
+        url += `&query=${encodeURIComponent(query)}`;
+    }
+
     try {
-        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_BARANG}`);
+        const response = await fetch(url);
         const result = await response.json();
         if (result.status === 'sukses') {
-            AppState.barang = result.data;
-            renderTabelBarang();
+            // Jika tidak ada query, simpan semua data ke cache global untuk kasir
+            if (!query) {
+                AppState.barang = result.data;
+            }
+            // Render data yang diterima (bisa semua atau hasil filter)
+            renderTabelBarang(result.data); 
         } else {
             tampilkanNotifikasi('Gagal memuat data: ' + result.message, 'error');
         }
@@ -48,6 +60,7 @@ export async function muatDataBarang() {
         loadingManajemen.classList.add('hidden');
     }
 }
+
 
 export async function handleFormSubmit(e) {
     e.preventDefault();
@@ -67,8 +80,8 @@ export async function handleFormSubmit(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formBarang.reset();
             keluarModeEdit();
-            AppState.barang = [];
-            muatDataBarang();
+            // Panggil muatDataBarang tanpa query untuk refresh dan memuat semua data lagi
+            muatDataBarang(); 
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
         }
@@ -91,7 +104,7 @@ export async function hapusBarang(id, target) {
         const result = await response.json();
         if (result.status === 'sukses') {
             tampilkanNotifikasi(result.message, 'sukses');
-            AppState.barang = [];
+            // Panggil muatDataBarang tanpa query untuk refresh dan memuat semua data lagi
             muatDataBarang();
         } else {
             tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
@@ -225,7 +238,7 @@ export async function prosesTransaksi() {
         if (result.status === 'sukses') {
             document.getElementById('menu-transaksi').classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
-            AppState.barang = [];
+            AppState.barang = []; // Kosongkan cache agar stok baru dimuat
             AppState.laporan = [];
         } else {
             tampilkanNotifikasi(result.message, 'error');
@@ -264,20 +277,16 @@ export async function muatLaporan() {
     }
 }
 
-// ====================================================================
-// === FUNGSI BARU UNTUK MEMBATALKAN TRANSAKSI ===
-// ====================================================================
 export async function batalkanTransaksiApi(idTransaksi) {
     const formData = new FormData();
-    formData.append('action', API_ACTIONS.BATALKAN_TRANSAKSI); // Menggunakan konstanta baru
+    formData.append('action', API_ACTIONS.BATALKAN_TRANSAKSI);
     formData.append('idTransaksi', idTransaksi);
   
     try {
       const response = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
       const result = await response.json();
-      return result; // Kembalikan hasil dari backend untuk diproses di UI
+      return result;
     } catch (error) {
-      // Tangani error jaringan
       return { status: 'error', message: 'Kesalahan jaringan saat mencoba membatalkan transaksi.' };
     }
 }
