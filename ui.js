@@ -40,18 +40,21 @@ export async function checkLoginStatus() {
         loginContainer.classList.add('hidden');
         appContainer.classList.remove('hidden');
         
-        if (AppState.barang.length === 0 && AppState.laporan.length === 0) {
+        // Hanya muat semua data dari server jika cache (AppState.barang) masih kosong.
+        // Ini terjadi saat pertama kali login atau saat halaman di-refresh.
+        if (AppState.barang.length === 0) { 
             infoNamaKasir.textContent = 'Memuat data aplikasi...';
             await muatSemuaDataAwal();
         }
 
+        // Setelah data dipastikan ada, perbarui UI sepenuhnya.
         infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
         if (userData.Role === 'admin') {
             navPengguna.classList.remove('hidden');
         } else {
             navPengguna.classList.add('hidden');
         }
-        navManajemen.click();
+        navManajemen.click(); // Buka tab default
     } else {
         loginContainer.classList.remove('hidden');
         appContainer.classList.add('hidden');
@@ -67,6 +70,8 @@ export async function handleLogin(formData) {
     const result = await handleLoginApi(formData);
 
     if (result.success) {
+        // Setelah API login berhasil, panggil checkLoginStatus.
+        // checkLoginStatus sekarang akan menangani pemuatan data awal dan setup UI.
         await checkLoginStatus(); 
     } else {
         loginStatus.textContent = result.message;
