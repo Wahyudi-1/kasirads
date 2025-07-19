@@ -2,13 +2,12 @@
 // UI.JS - Modul untuk Semua Hal Terkait Tampilan dan Interaksi Pengguna
 // ====================================================================
 
-import { AppState, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
+import { AppState, SCRIPT_URL, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
 import { handleLoginApi, batalkanTransaksiApi } from './api.js';
 
 // --- Variabel State Lokal untuk UI ---
 export let dataTransaksiTerakhir = null;
 export let idTransaksiTerakhir = null;
-// Variabel untuk menyimpan data yang sedang ditampilkan di tabel manajemen
 let dataBarangTerakhirRender = [];
 
 
@@ -79,12 +78,7 @@ export function handleLogout() {
     }
 }
 
-/**
- * Merender tabel barang berdasarkan data yang diberikan.
- * @param {Array} data - Array objek barang yang akan ditampilkan.
- */
 export function renderTabelBarang(data) {
-    // Simpan data yang dirender untuk digunakan oleh tombol 'Ubah'
     dataBarangTerakhirRender = data;
     tabelBarangBody.innerHTML = '';
     data.forEach(item => {
@@ -104,11 +98,6 @@ export function renderTabelBarang(data) {
     });
 }
 
-/**
- * Mendapatkan detail barang dari data yang sedang ditampilkan di tabel manajemen.
- * @param {string} id - ID Barang yang dicari.
- * @returns {object|undefined} - Objek barang jika ditemukan.
- */
 export function getDataFromLastRender(id) {
     return dataBarangTerakhirRender.find(item => item.ID_Barang === id);
 }
@@ -423,32 +412,40 @@ export function showMenu(menuToShow) {
     menuToShow.classList.remove('hidden');
 }
 
-export function rekomendasiKodeBarang(query) {
+/**
+ * === PERBAIKAN: Fungsi ini sekarang memanggil API untuk mendapatkan rekomendasi ===
+ */
+export async function rekomendasiKodeBarang(query) {
     const q = query.toLowerCase();
     if (q.length < 1 || AppState.modeEdit.barang) {
         rekomendasiKodeDiv.classList.add('hidden');
         rekomendasiKodeDiv.innerHTML = '';
         return;
     }
-    const hasilFilter = AppState.barang.filter(item => {
-        const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
-        const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
-        return kode.includes(q) || nama.includes(q);
-    }).slice(0, 10);
-    rekomendasiKodeDiv.innerHTML = '';
-    if (hasilFilter.length > 0) {
-        rekomendasiKodeDiv.classList.remove('hidden');
-        hasilFilter.forEach(item => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'rekomendasi-item';
-            itemDiv.textContent = `${item.Kode_Barang} - ${item.Nama_Barang}`;
-            itemDiv.addEventListener('click', () => {
-                masukModeEdit(item);
-                rekomendasiKodeDiv.classList.add('hidden');
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?action=getBarang&query=${encodeURIComponent(q)}`);
+        const result = await response.json();
+
+        rekomendasiKodeDiv.innerHTML = '';
+        if (result.status === 'sukses' && result.data.length > 0) {
+            rekomendasiKodeDiv.classList.remove('hidden');
+            // Hanya tampilkan 5 hasil teratas untuk rekomendasi
+            result.data.slice(0, 5).forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'rekomendasi-item';
+                itemDiv.textContent = `${item.Kode_Barang} - ${item.Nama_Barang}`;
+                itemDiv.addEventListener('click', () => {
+                    masukModeEdit(item);
+                    rekomendasiKodeDiv.classList.add('hidden');
+                });
+                rekomendasiKodeDiv.appendChild(itemDiv);
             });
-            rekomendasiKodeDiv.appendChild(itemDiv);
-        });
-    } else {
+        } else {
+            rekomendasiKodeDiv.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error("Gagal mengambil rekomendasi:", error);
         rekomendasiKodeDiv.classList.add('hidden');
     }
 }
