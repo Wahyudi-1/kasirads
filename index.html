@@ -87,22 +87,29 @@
                         </div>
                     </form>
                 </div>
-                <div class="tabel-container">
-                    <div id="loading-manajemen" class="loading hidden"></div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Kode</th>
-                                <th>Nama Barang</th>
-                                <th>Kategori</th>
-                                <th>Stok Dasar</th>
-                                <th>Harga Dasar</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabel-barang-body"></tbody>
-                    </table>
+               <div class="tabel-container">
+                <!-- === ELEMEN KONTROL BARU DI SINI === -->
+                <div class="tabel-controls" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                    <input type="text" id="input-cari-manajemen" placeholder="Ketik Kode atau Nama Barang untuk mencari..." style="flex-grow: 1;">
+                    <button id="btn-cari-manajemen">Cari</button>
+                    <button id="btn-tampilkan-semua" style="background-color: #3498db;">Tampilkan Semua Data</button>
                 </div>
+                
+                <div id="loading-manajemen" class="loading hidden"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Barang</th>
+                            <th>Kategori</th>
+                            <th>Stok Dasar</th>
+                            <th>Harga Dasar</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabel-barang-body"></tbody>
+                </table>
+            </div>
             </section>
 
             <!-- TAMPILAN 2: KASIR TRANSAKSI -->
