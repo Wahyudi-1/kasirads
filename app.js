@@ -7,7 +7,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQZV3swjmSJXEyM4JR2Bboqhs8qLwWO669md_WSYguRIpz3q_s9YcfAv5mx_4_kKtr/exec";
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhue9eY4KEOD9SCm1Wdbq0Md1wSQVyxCbkdAnI9lLoOg9Kjljf43XXMlaAfj_o-NCX/exec";
 
 export const API_ACTIONS = {
     LOGIN: 'loginUser', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
@@ -98,7 +98,7 @@ btnLogout.addEventListener('click', ui.handleLogout);
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
-    // Kosongkan tabel dan pencarian saat tab dibuka untuk state yang bersih
+    // Kosongkan tabel dan pencarian saat tab dibuka, data sudah ada di cache
     ui.renderTabelBarang([]);
     inputCariManajemen.value = '';
 });
@@ -106,20 +106,20 @@ navManajemen.addEventListener('click', () => {
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    // Tidak perlu aksi, data sudah dijamin ada di AppState.
+    // Tidak perlu aksi, data sudah dimuat di awal
 });
 
 navLaporan.addEventListener('click', () => {
     ui.setActiveNav(navLaporan);
     ui.showMenu(menuLaporan);
-    // Panggil fungsi yang hanya menyiapkan UI dari data yang sudah ada di cache.
+    // Panggil fungsi yang hanya memproses dan merender dari data cache
     api.muatLaporan(); 
 });
 
 navPengguna.addEventListener('click', () => {
     ui.setActiveNav(navPengguna);
     ui.showMenu(menuPengguna);
-    // Panggil fungsi yang hanya merender dari data yang sudah ada di cache.
+    // Panggil fungsi yang hanya merender dari data cache
     api.muatDataPengguna();
 });
 
@@ -137,9 +137,9 @@ inputCariManajemen.addEventListener('keypress', (e) => {
 });
 
 btnTampilkanSemua.addEventListener('click', () => {
-    // Tidak perlu konfirmasi karena proses filter terjadi di client dan sangat cepat
     inputCariManajemen.value = '';
-    api.muatDataBarang(); // Memanggil tanpa query akan menampilkan semua data dari cache
+    // Panggil muatDataBarang tanpa query untuk menampilkan semua data dari cache
+    api.muatDataBarang(); 
 });
 
 // --- Event Listener CRUD Barang & Pengguna ---
