@@ -8,7 +8,6 @@ import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabe
 // --- FUNGSI-FUNGSI API ---
 
 /**
- * === FUNGSI BARU (Eager Loading) ===
  * Memuat semua data penting (barang, laporan, pengguna) secara bersamaan setelah login.
  */
 export async function muatSemuaDataAwal() {
@@ -60,7 +59,7 @@ export async function handleLoginApi(dataUntukKirim) {
 }
 
 /**
- * === PERBAIKAN: Fungsi ini sekarang hanya memfilter dan merender data dari cache ===
+ * Memfilter dan merender data barang dari cache yang sudah ada.
  * @param {string} query - Kata kunci pencarian (opsional).
  */
 export function muatDataBarang(query = "") {
@@ -136,7 +135,7 @@ export async function hapusBarang(id, target) {
 }
 
 /**
- * === PERBAIKAN: Fungsi ini sekarang hanya merender data dari cache ===
+ * Merender tabel pengguna dari data yang ada di cache.
  */
 export function muatDataPengguna() {
     renderTabelPengguna();
@@ -241,7 +240,7 @@ export async function prosesTransaksi() {
         if (result.status === 'sukses') {
             document.getElementById('menu-transaksi').classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
-            // Kosongkan cache agar data baru dimuat saat login berikutnya
+            // Kosongkan cache agar data baru dimuat saat login berikutnya atau refresh manual
             AppState.barang = [];
             AppState.laporan = [];
         } else {
@@ -257,7 +256,7 @@ export async function prosesTransaksi() {
 }
 
 /**
- * === PERBAIKAN: Fungsi ini sekarang hanya mempersiapkan UI, tidak fetch data ===
+ * Mempersiapkan UI filter laporan dari data yang ada di cache.
  */
 export function muatLaporan() {
     populasiFilterKasir();
