@@ -2,8 +2,15 @@
 // UI.JS - Modul untuk Semua Hal Terkait Tampilan dan Interaksi Pengguna
 // ====================================================================
 
-import { AppState, API_ACTIONS, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
-import { handleLoginApi } from './api.js';
+import { AppState, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
+import { handleLoginApi, batalkanTransaksiApi } from './api.js'; // PERBAIKAN: Impor fungsi baru
+
+// ====================================================================
+// === PERBAIKAN: Variabel untuk menyimpan state transaksi terakhir ===
+// ====================================================================
+export let dataTransaksiTerakhir = null;
+export let idTransaksiTerakhir = null;
+
 
 // --- FUNGSI-FUNGSI UI ---
 
@@ -38,22 +45,15 @@ export function checkLoginStatus() {
     }
 }
 
-// di dalam file ui.js
 export async function handleLogin(e) {
     e.preventDefault();
     const formData = new FormData(formLogin);
-    
-    // ==========================================================
-    // === TAMBAHKAN BARIS PERBAIKAN INI ===
-    formData.append('action', API_ACTIONS.LOGIN); 
-    // ==========================================================
-
     const button = formLogin.querySelector('button');
     button.disabled = true;
     button.textContent = 'Memproses...';
     loginStatus.textContent = '';
     
-    const result = await handleLoginApi(formData); // Sekarang formData sudah benar
+    const result = await handleLoginApi(formData);
 
     if (!result.success) {
         loginStatus.textContent = result.message;
@@ -341,7 +341,16 @@ export function hitungKembalian() {
     btnProsesTransaksi.disabled = !(kembali >= 0 && AppState.keranjang.length > 0);
 }
 
+/**
+ * === PERBAIKAN DI SINI ===
+ * Fungsi ini sekarang menyimpan data transaksi ke variabel global
+ * agar bisa diakses oleh tombol "Ubah Transaksi".
+ */
 export function tampilkanStruk(dataTransaksi, idTransaksi) {
+    // Simpan data untuk digunakan nanti oleh fitur "Ubah Transaksi"
+    dataTransaksiTerakhir = dataTransaksi;
+    idTransaksiTerakhir = idTransaksi;
+
     let htmlStruk = `<h3>Toko ADS Gedangan</h3><p>ID Transaksi: ${idTransaksi}</p><p>Waktu: ${new Date().toLocaleString('id-ID')}</p><p>Kasir: ${dataTransaksi.kasir}</p><hr>`;
     dataTransaksi.keranjang.forEach(item => {
         htmlStruk += `<div>${item.namaBarang}</div><div class="struk-item"><span>${item.jumlah} ${item.satuan} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
@@ -350,6 +359,7 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
     htmlStruk += `<div class="struk-item"><span>Bayar</span><span>${formatRupiah(dataTransaksi.jumlahBayar)}</span></div>`;
     htmlStruk += `<div class="struk-item"><span>Kembali</span><span>${formatRupiah(dataTransaksi.kembalian)}</span></div>`;
     htmlStruk += `<hr><p style="text-align:center; margin-top:10px;">Terima Kasih Telah Berbelanja, Semoga Berkah ^_^</p>`;
+    
     strukContent.innerHTML = htmlStruk;
     areaStruk.classList.remove('hidden');
 }
@@ -423,5 +433,47 @@ export function togglePasswordVisibility(target) {
     } else {
         passwordInput.type = 'password';
         target.textContent = '👁️';
+    }
+}
+
+// ====================================================================
+// === FUNGSI BARU UNTUK PROSES UBAH TRANSAKSI ===
+// ====================================================================
+export async function handleBatalDanUlangi() {
+    if (!idTransaksiTerakhir) {
+        alert("Tidak ada data transaksi terakhir untuk diubah.");
+        return;
+    }
+
+    if (!confirm("Anda yakin ingin mengubah transaksi ini? Transaksi lama akan dibatalkan dan stok akan dikembalikan ke sistem.")) {
+      return;
+    }
+  
+    const btnUbah = document.getElementById('btn-ubah-transaksi');
+    btnUbah.disabled = true;
+    btnUbah.textContent = 'Membatalkan...';
+  
+    const result = await batalkanTransaksiApi(idTransaksiTerakhir);
+  
+    if (result.status === 'sukses') {
+      tampilkanNotifikasi(result.message, 'sukses');
+  
+      // Isi kembali keranjang dengan data dari transaksi yang dibatalkan
+      AppState.keranjang = dataTransaksiTerakhir.keranjang;
+      
+      // Kembali ke halaman kasir
+      areaStruk.classList.add('hidden');
+      menuTransaksi.classList.remove('hidden');
+      
+      // Render ulang keranjang, hitung total, dan siapkan input pembayaran
+      renderKeranjang();
+      inputBayar.value = dataTransaksiTerakhir.jumlahBayar; // Isi kembali jumlah bayar sebelumnya
+      hitungKembalian();
+      
+    } else {
+      tampilkanNotifikasi('Gagal: ' + result.message, 'error');
+      // Aktifkan kembali tombol jika gagal
+      btnUbah.disabled = false;
+      btnUbah.textContent = 'Ubah Transaksi';
     }
 }
