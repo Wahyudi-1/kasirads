@@ -7,10 +7,11 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcl63KsQDd4U8nxETR6A_4ttUlGBMsw0g1rqFy2uSgGKvbFF4rfj3f4cmfeQTh7IxR/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr6eh-_msRz7qiPJs8FLyYw6N7GLuyPMN01kQuYsFTAH8CABdZ-veKUZ9bzp4FUjTm/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
 
 export const API_ACTIONS = {
-    LOGIN: 'loginUser', GET_BARANG: 'getSemuaBarang', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
+    // GET_BARANG dihapus karena digantikan oleh rute baru di backend
+    LOGIN: 'loginUser', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
     BATALKAN_TRANSAKSI: 'batalkanTransaksi'
 };
 
@@ -44,6 +45,10 @@ export const btnSimpan = document.getElementById('btn-simpan');
 export const btnBatal = document.getElementById('btn-batal');
 export const tabelBarangBody = document.getElementById('tabel-barang-body');
 export const loadingManajemen = document.getElementById('loading-manajemen');
+// === PERBAIKAN: Menambahkan selektor untuk kontrol pencarian di manajemen barang ===
+export const inputCariManajemen = document.getElementById('input-cari-manajemen');
+export const btnCariManajemen = document.getElementById('btn-cari-manajemen');
+export const btnTampilkanSemua = document.getElementById('btn-tampilkan-semua');
 export const formPengguna = document.getElementById('form-pengguna');
 export const idPenggunaInput = document.getElementById('ID_Pengguna');
 export const btnTambahPengguna = document.getElementById('btn-tambah-pengguna');
@@ -72,7 +77,6 @@ export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
 export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
 export const btnKirimWhatsApp = document.getElementById('btn-kirim-whatsapp');
-// === PERBAIKAN: Menambahkan kembali selektor untuk tombol di struk dan di kasir ===
 export const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
 export const btnTransaksiBaruKasir = document.getElementById('btn-transaksi-baru-kasir');
 
@@ -90,18 +94,22 @@ formLogin.addEventListener('submit', (e) => {
 });
 btnLogout.addEventListener('click', ui.handleLogout);
 
+// === PERBAIKAN: Logika navigasi diubah untuk mendukung "Search-First" ===
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
-    api.muatDataBarang();
+    // Data tidak dimuat otomatis, menunggu input pengguna
 });
+
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
+    // Memastikan semua data barang dimuat ke cache untuk pencarian di halaman kasir
     if (AppState.barang.length === 0) {
-        api.muatDataBarang();
+        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data
     }
 });
+
 navLaporan.addEventListener('click', () => {
     ui.setActiveNav(navLaporan);
     ui.showMenu(menuLaporan);
@@ -113,13 +121,35 @@ navPengguna.addEventListener('click', () => {
     api.muatDataPengguna();
 });
 
+// === PERBAIKAN: Menambahkan event listener untuk kontrol pencarian baru ===
+btnCariManajemen.addEventListener('click', () => {
+    const query = inputCariManajemen.value;
+    api.muatDataBarang(query);
+});
+
+inputCariManajemen.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        const query = inputCariManajemen.value;
+        api.muatDataBarang(query);
+    }
+});
+
+btnTampilkanSemua.addEventListener('click', () => {
+    if (confirm("Memuat semua data mungkin akan lambat jika database besar. Lanjutkan?")) {
+        inputCariManajemen.value = '';
+        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data
+    }
+});
+
+// --- Event Listener Lainnya ---
 formBarang.addEventListener('submit', api.handleFormSubmit);
 btnBatal.addEventListener('click', ui.keluarModeEdit);
 tabelBarangBody.addEventListener('click', (e) => {
     const target = e.target;
     if (target.classList.contains('btn-ubah')) {
         const id = target.dataset.id;
-        const dataBarang = AppState.barang.find(item => item.ID_Barang === id);
+        // Ambil data dari tabel yang sedang ditampilkan, bukan dari cache global
+        const dataBarang = ui.getDataFromrenderedTable(id); 
         if (dataBarang) ui.masukModeEdit(dataBarang);
     }
     if (target.classList.contains('btn-hapus')) {
@@ -148,6 +178,8 @@ tabelPenggunaBody.addEventListener('click', (e) => {
 });
 
 inputKodeBarang.addEventListener('keyup', (e) => {
+    // Fitur ini mungkin perlu penyesuaian jika data barang tidak dimuat semua
+    // Untuk saat ini, kita biarkan, akan berfungsi jika 'Tampilkan Semua' sudah diklik
     ui.rekomendasiKodeBarang(inputKodeBarang.value);
 });
 
@@ -198,16 +230,12 @@ tabelKeranjangBody.addEventListener('change', (e) => {
 });
 
 btnCetakStruk.addEventListener('click', ui.cetakStruk);
-
 btnUbahTransaksi.addEventListener('click', () => {
     ui.handleBatalDanUlangi();
 });
-
 btnKirimWhatsApp.addEventListener('click', () => {
     ui.handleKirimWhatsApp();
 });
-
-// === PERBAIKAN: Menambahkan kembali event listener untuk tombol di halaman struk ===
 btnTransaksiBaru.addEventListener('click', () => {
     AppState.keranjang = [];
     ui.renderKeranjang();
@@ -217,7 +245,6 @@ btnTransaksiBaru.addEventListener('click', () => {
     areaStruk.classList.add('hidden');
     inputCari.focus();
 });
-
 btnTransaksiBaruKasir.addEventListener('click', () => {
     if (AppState.keranjang.length > 0 && confirm('Apakah Anda yakin ingin mengosongkan keranjang dan memulai transaksi baru?')) {
         AppState.keranjang = [];
