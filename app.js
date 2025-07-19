@@ -7,7 +7,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG0jpT2mj2-iu12OfgMjrngyWTARrrzM52TL3IUyKoXig01TE5FW2h5h_-Uy8ROxZd/exec";
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvcHzScV7RCgXwGPgPKOxlj1jhACqtVoJbZFOzeC5q6KJ8uckoJIuysmmgsLrAKw9L/exec";
 
 export const API_ACTIONS = {
     LOGIN: 'loginUser', GET_BARANG: 'getSemuaBarang', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi'
