@@ -745,6 +745,11 @@ navManajemen.addEventListener('click', () => {
 navTransaksi.addEventListener('click', () => {
     setActiveNav(navTransaksi);
     showMenu(menuTransaksi);
+    // Tambahkan logika ini:
+    // Jika data barang belum ada di cache (array kosong), panggil fungsi muatDataBarang.
+    if (semuaDataBarang.length === 0) {
+        muatDataBarang(); 
+    }
 });
 navLaporan.addEventListener('click', () => {
     setActiveNav(navLaporan);
