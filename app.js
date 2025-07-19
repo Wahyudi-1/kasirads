@@ -7,7 +7,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr6eh-_msRz7qiPJs8FLyYw6N7GLuyPMN01kQuYsFTAH8CABdZ-veKUZ9bzp4FUjTm/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvHPr1or5j280BCmwXxtL0gb-37neeNdAiZm1-rUPrRjp6aNOjicfEW9odften57fH/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
 
 export const API_ACTIONS = {
     // GET_BARANG dihapus karena digantikan oleh rute baru di backend
