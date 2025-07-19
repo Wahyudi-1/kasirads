@@ -7,7 +7,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhue9eY4KEOD9SCm1Wdbq0Md1wSQVyxCbkdAnI9lLoOg9Kjljf43XXMlaAfj_o-NCX/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhue9eY4KEOD9SCm1Wdbq0Md1wSQVyxCbkdAnI9lLoOg9Kjljf43XXMlaAfj_o-NCX/exec";
 
 export const API_ACTIONS = {
     LOGIN: 'loginUser', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
@@ -70,6 +70,9 @@ export const kembalianSpan = document.getElementById('kembalian');
 export const btnProsesTransaksi = document.getElementById('btn-proses-transaksi');
 export const tabelLaporanBody = document.getElementById('tabel-laporan-body');
 export const loadingLaporan = document.getElementById('loading-laporan');
+// === PERBAIKAN: Menambahkan selektor untuk tombol filter ===
+export const btnFilterLaporan = document.getElementById('btn-filter-laporan');
+export const btnResetFilter = document.getElementById('btn-reset-filter');
 export const areaStruk = document.getElementById('area-struk');
 export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
@@ -96,22 +99,27 @@ btnLogout.addEventListener('click', ui.handleLogout);
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
-    // Data tidak dimuat otomatis, menunggu input pengguna.
 });
 
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    // Memastikan semua data barang dimuat ke cache untuk pencarian di halaman kasir.
     if (AppState.barang.length === 0) {
-        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data.
+        api.muatDataBarang();
     }
 });
 
+// === PERBAIKAN: Logika navigasi laporan diubah untuk mendukung filter ===
 navLaporan.addEventListener('click', () => {
     ui.setActiveNav(navLaporan);
     ui.showMenu(menuLaporan);
-    api.muatLaporan();
+    // Hanya muat data dari server jika cache kosong
+    if (AppState.laporan.length === 0) {
+        api.muatLaporan();
+    } else {
+        // Jika data sudah ada di cache, cukup pastikan filter diisi
+        ui.populasiFilterKasir();
+    }
 });
 
 navPengguna.addEventListener('click', () => {
@@ -136,7 +144,7 @@ inputCariManajemen.addEventListener('keypress', (e) => {
 btnTampilkanSemua.addEventListener('click', () => {
     if (confirm("Memuat semua data mungkin akan lambat jika database besar. Lanjutkan?")) {
         inputCariManajemen.value = '';
-        api.muatDataBarang(); // Memanggil tanpa query akan memuat semua data.
+        api.muatDataBarang();
     }
 });
 
@@ -263,4 +271,16 @@ btnTransaksiBaruKasir.addEventListener('click', () => {
         ui.hitungKembalian();
         inputCari.focus();
     }
+});
+
+// === PERBAIKAN: Menambahkan event listener untuk tombol filter laporan ===
+btnFilterLaporan.addEventListener('click', ui.terapkanFilterLaporan);
+
+btnResetFilter.addEventListener('click', () => {
+    document.getElementById('filter-tanggal-mulai').value = '';
+    document.getElementById('filter-tanggal-selesai').value = '';
+    document.getElementById('filter-kasir').value = '';
+    document.getElementById('filter-status').value = '';
+    // Kosongkan tabel hasil filter
+    ui.renderTabelLaporan([]);
 });
