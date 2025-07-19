@@ -3,30 +3,22 @@
 // ====================================================================
 
 // PASTIKAN URL WEB APP ANDA SUDAH BENAR DI SINI
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG0jpT2mj2-iu12OfgMjrngyWTARrrzM52TL3IUyKoXig01TE5FW2h5h_-Uy8ROxZd/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG0jpT2mj2-iu12OfgMjrngyWTARrrzM52TL3IUyKoXig01TE5FW2h5h_-Uy8ROxZd/exec";
 
-// === TAMBAHKAN OBJEK INI ===
+// === KAMUS UNTUK SEMUA AKSI API ===
 const API_ACTIONS = {
-    // Aksi untuk Login & Sesi
     LOGIN: 'loginUser',
-
-    // Aksi untuk Manajemen Barang
     GET_BARANG: 'getSemuaBarang',
     TAMBAH_BARANG: 'tambahBarang',
     UBAH_BARANG: 'ubahBarang',
     HAPUS_BARANG: 'hapusBarang',
-
-    // Aksi untuk Manajemen Pengguna
     GET_PENGGUNA: 'getSemuaPengguna',
     TAMBAH_PENGGUNA: 'tambahPengguna',
     UBAH_PENGGUNA: 'ubahPengguna',
     HAPUS_PENGGUNA: 'hapusPengguna',
-
-    // Aksi untuk Transaksi & Laporan
     PROSES_TRANSAKSI: 'prosesTransaksi',
     GET_LAPORAN: 'getRiwayatTransaksi'
 };
-// === BATAS PENAMBAHAN ===
 
 // --- ELEMEN-ELEMEN HTML ---
 const loginContainer = document.getElementById('login-container');
@@ -82,18 +74,18 @@ const strukContent = document.getElementById('struk-content');
 const btnCetakStruk = document.getElementById('btn-cetak-struk');
 const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
 
-// --- STATE APLIKASI & CACHE ---
+// --- STATE APLIKASI & CACHE (TERSENTRALISASI) ---
 const AppState = {
     keranjang: [],
-    barang: [],      // Sebelumnya 'semuaDataBarang'
-    pengguna: [],    // Sebelumnya 'semuaDataPengguna'
-    laporan: [],     // Sebelumnya 'semuaDataLaporan'
+    barang: [],
+    pengguna: [],
+    laporan: [],
     modeEdit: {
-        barang: false,   // Sebelumnya 'modeEdit'
-        pengguna: false  // Sebelumnya 'modeEditPengguna'
+        barang: false,
+        pengguna: false
     },
-    currentUser: null, // Untuk menyimpan data user yg login
-    timeoutCari: null  // Sebelumnya 'timeoutCari'
+    currentUser: null,
+    timeoutCari: null
 };
 
 
@@ -105,6 +97,7 @@ function checkLoginStatus() {
     const user = sessionStorage.getItem('user');
     if (user) {
         const userData = JSON.parse(user);
+        AppState.currentUser = userData; // Muat data user ke state saat aplikasi dimulai
         loginContainer.classList.add('hidden');
         appContainer.classList.remove('hidden');
         infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
@@ -125,22 +118,22 @@ async function handleLogin(e) {
     const formData = new FormData(formLogin);
     const username = formData.get('username');
     const passwordAsli = formData.get('password');
-    // Hashing dilakukan di sisi backend untuk keamanan terbaik
     const dataUntukKirim = new FormData();
     dataUntukKirim.append('action', API_ACTIONS.LOGIN);
     dataUntukKirim.append('username', username);
-    dataUntukKirim.append('password', passwordAsli); // Kirim password asli, biarkan backend yg hash
-    
+    dataUntukKirim.append('password', passwordAsli);
+
     const button = formLogin.querySelector('button');
     button.disabled = true;
     button.textContent = 'Memproses...';
     loginStatus.textContent = '';
-    
+
     try {
         const response = await fetch(SCRIPT_URL, { method: 'POST', body: dataUntukKirim });
         const result = await response.json();
         if (result.status === 'sukses') {
             sessionStorage.setItem('user', JSON.stringify(result.user));
+            AppState.currentUser = result.user; // Simpan juga ke state aplikasi
             checkLoginStatus();
         } else {
             loginStatus.textContent = result.message;
@@ -156,10 +149,11 @@ async function handleLogin(e) {
 function handleLogout() {
     if (confirm('Apakah Anda yakin ingin logout?')) {
         sessionStorage.removeItem('user');
-        keranjang = [];
-        semuaDataBarang = [];
-        semuaDataPengguna = [];
-        semuaDataLaporan = [];
+        AppState.currentUser = null;
+        AppState.keranjang = [];
+        AppState.barang = [];
+        AppState.pengguna = [];
+        AppState.laporan = [];
         checkLoginStatus();
     }
 }
@@ -187,7 +181,7 @@ const formatRupiah = (angka) => {
 
 // --- MANAJEMEN BARANG ---
 async function muatDataBarang() {
-    if (semuaDataBarang.length > 0) {
+    if (AppState.barang.length > 0) {
         renderTabelBarang();
         return;
     }
@@ -197,7 +191,7 @@ async function muatDataBarang() {
         const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_BARANG}`);
         const result = await response.json();
         if (result.status === 'sukses') {
-            semuaDataBarang = result.data;
+            AppState.barang = result.data;
             renderTabelBarang();
         } else {
             tampilkanNotifikasi('Gagal memuat data: ' + result.message, 'error');
@@ -211,8 +205,7 @@ async function muatDataBarang() {
 
 function renderTabelBarang() {
     tabelBarangBody.innerHTML = '';
-    // PERBAIKAN: Menggunakan nama kolom yang sudah diperbaiki (Stok_Pcs, Harga_Pcs)
-    semuaDataBarang.forEach(item => {
+    AppState.barang.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.Kode_Barang}</td>
@@ -229,14 +222,13 @@ function renderTabelBarang() {
     });
 }
 
-
 async function handleFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(formBarang);
-    const action = modeEdit ? API_ACTIONS.UBAH_BARANG : API_ACTIONS.TAMBAH_BARANG;
+    const action = AppState.modeEdit.barang ? API_ACTIONS.UBAH_BARANG : API_ACTIONS.TAMBAH_BARANG;
     formData.append('action', action);
 
-    const button = modeEdit ? btnSimpan : btnTambah;
+    const button = AppState.modeEdit.barang ? btnSimpan : btnTambah;
     button.disabled = true;
     button.textContent = 'Memproses...';
 
@@ -250,7 +242,7 @@ async function handleFormSubmit(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formBarang.reset();
             keluarModeEdit();
-            semuaDataBarang = []; // Kosongkan cache agar data baru dimuat
+            AppState.barang = []; // Kosongkan cache agar data baru dimuat
             muatDataBarang();
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
@@ -259,16 +251,15 @@ async function handleFormSubmit(e) {
         tampilkanNotifikasi('Terjadi kesalahan jaringan.', 'error');
     } finally {
         button.disabled = false;
-        button.textContent = modeEdit ? 'Simpan Perubahan' : 'Tambah Barang';
+        button.textContent = AppState.modeEdit.barang ? 'Simpan Perubahan' : 'Tambah Barang';
     }
 }
 
 function masukModeEdit(dataBarang) {
-    modeEdit = true;
+    AppState.modeEdit.barang = true;
     formBarang.scrollIntoView({
         behavior: 'smooth'
     });
-    // Mengisi form dengan data. `form.elements` menggunakan 'name' atau 'id'
     for (const key in dataBarang) {
         if (formBarang.elements[key]) {
             formBarang.elements[key].value = dataBarang[key];
@@ -282,7 +273,7 @@ function masukModeEdit(dataBarang) {
 }
 
 function keluarModeEdit() {
-    modeEdit = false;
+    AppState.modeEdit.barang = false;
     formBarang.reset();
     idBarangInput.value = '';
     btnTambah.classList.remove('hidden');
@@ -292,7 +283,7 @@ function keluarModeEdit() {
 
 // --- MANAJEMEN PENGGUNA ---
 async function muatDataPengguna() {
-    if (semuaDataPengguna.length > 0) {
+    if (AppState.pengguna.length > 0) {
         renderTabelPengguna();
         return;
     }
@@ -302,7 +293,7 @@ async function muatDataPengguna() {
         const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`);
         const result = await response.json();
         if (result.status === 'sukses') {
-            semuaDataPengguna = result.data;
+            AppState.pengguna = result.data;
             renderTabelPengguna();
         } else {
             tampilkanNotifikasi('Gagal memuat data pengguna: ' + result.message, 'error');
@@ -316,7 +307,7 @@ async function muatDataPengguna() {
 
 function renderTabelPengguna() {
     tabelPenggunaBody.innerHTML = '';
-    semuaDataPengguna.forEach(user => {
+    AppState.pengguna.forEach(user => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${user.Username}</td>
@@ -331,15 +322,11 @@ function renderTabelPengguna() {
     });
 }
 
-// ====================================================================
-// === FUNGSI DENGAN PERBAIKAN BUG KRITIS (MANAJEMEN PENGGUNA) ===
-// ====================================================================
 async function handleFormSubmitPengguna(e) {
     e.preventDefault();
     const formData = new FormData(formPengguna);
-    const action = modeEditPengguna ? API_ACTIONS.UBAH_PENGGUNA : API_ACTIONS.TAMBAH_PENGGUNA;
+    const action = AppState.modeEdit.pengguna ? API_ACTIONS.UBAH_PENGGUNA : API_ACTIONS.TAMBAH_PENGGUNA;
     
-    // PERBAIKAN: Membaca nilai dari input dengan name="Password_Baru"
     const passwordValue = formData.get('Password_Baru');
 
     const dataUntukKirim = new FormData();
@@ -349,21 +336,19 @@ async function handleFormSubmitPengguna(e) {
     dataUntukKirim.append('Nama_Lengkap', formData.get('Nama_Lengkap'));
     dataUntukKirim.append('Role', formData.get('Role'));
 
-    if (modeEditPengguna) {
-        // Jika sedang mode edit dan field password diisi, kirim 'Password_Baru'
+    if (AppState.modeEdit.pengguna) {
         if (passwordValue) {
             dataUntukKirim.append('Password_Baru', passwordValue);
         }
-    } else { // Mode tambah pengguna
+    } else {
         if (!passwordValue) {
             alert('Password wajib diisi untuk pengguna baru.');
             return;
         }
-        // Saat menambah, backend mengharapkan 'Password'
         dataUntukKirim.append('Password', passwordValue);
     }
 
-    const button = modeEditPengguna ? btnSimpanPengguna : btnTambahPengguna;
+    const button = AppState.modeEdit.pengguna ? btnSimpanPengguna : btnTambahPengguna;
     button.disabled = true;
     button.textContent = 'Memproses...';
     try {
@@ -376,7 +361,7 @@ async function handleFormSubmitPengguna(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formPengguna.reset();
             keluarModeEditPengguna();
-            semuaDataPengguna = [];
+            AppState.pengguna = [];
             muatDataPengguna();
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
@@ -385,12 +370,12 @@ async function handleFormSubmitPengguna(e) {
         tampilkanNotifikasi('Terjadi kesalahan jaringan.', 'error');
     } finally {
         button.disabled = false;
-        button.textContent = modeEditPengguna ? 'Simpan Perubahan' : 'Tambah Pengguna';
+        button.textContent = AppState.modeEdit.pengguna ? 'Simpan Perubahan' : 'Tambah Pengguna';
     }
 }
 
 function masukModeEditPengguna(dataPengguna) {
-    modeEditPengguna = true;
+    AppState.modeEdit.pengguna = true;
     formPengguna.scrollIntoView({
         behavior: 'smooth'
     });
@@ -409,7 +394,7 @@ function masukModeEditPengguna(dataPengguna) {
 }
 
 function keluarModeEditPengguna() {
-    modeEditPengguna = false;
+    AppState.modeEdit.pengguna = false;
     formPengguna.reset();
     idPenggunaInput.value = '';
     formPengguna.elements['Password_Baru'].placeholder = "Isi untuk pengguna baru / jika ingin diubah";
@@ -417,7 +402,6 @@ function keluarModeEditPengguna() {
     btnSimpanPengguna.classList.add('hidden');
     btnBatalPengguna.classList.add('hidden');
 }
-
 
 // --- LOGIKA KASIR, LAPORAN & STRUK ---
 function cariBarang() {
@@ -428,7 +412,7 @@ function cariBarang() {
         return;
     }
 
-    const hasilFilter = semuaDataBarang.filter(item => {
+    const hasilFilter = AppState.barang.filter(item => {
         const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
         const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
         return kode.includes(query) || nama.includes(query);
@@ -454,7 +438,7 @@ function pilihBarang(item) {
     itemTerpilihDataInput.value = JSON.stringify(item);
     namaBarangTerpilihSpan.innerHTML = `${item.Nama_Barang} <small>(Stok: ${item.Stok_Pcs} Pcs)</small>`;
     
-    selectSatuanKasir.innerHTML = ''; // Kosongkan dulu
+    selectSatuanKasir.innerHTML = '';
     selectSatuanKasir.add(new Option(`Pcs - ${formatRupiah(item.Harga_Pcs)}`, 'Pcs'));
     if (item.Harga_Lusin > 0 && item.Pcs_Per_Lusin > 0) {
         selectSatuanKasir.add(new Option(`Lusin - ${formatRupiah(item.Harga_Lusin)}`, 'Lusin'));
@@ -472,15 +456,13 @@ function pilihBarang(item) {
 function handleTambahKeKeranjang(e) {
     e.preventDefault();
     const itemData = JSON.parse(itemTerpilihDataInput.value);
-    const jumlahDiminta = parseFloat(inputJumlahKasir.value); // Gunakan parseFloat untuk stok desimal
+    const jumlahDiminta = parseFloat(inputJumlahKasir.value);
     const satuanDiminta = selectSatuanKasir.value;
     
-    // Hitung total stok item ini yang sudah ada di keranjang (dalam satuan Pcs)
-    const pcsDiKeranjang = keranjang
+    const pcsDiKeranjang = AppState.keranjang
         .filter(item => item.idBarang === itemData.ID_Barang)
         .reduce((total, item) => total + item.jumlahPcs, 0);
     
-    // Hitung berapa Pcs yang akan ditambahkan dari permintaan baru
     let pcsAkanDitambah = 0;
     if (satuanDiminta === 'Pcs') {
         pcsAkanDitambah = jumlahDiminta;
@@ -490,7 +472,6 @@ function handleTambahKeKeranjang(e) {
         pcsAkanDitambah = jumlahDiminta * itemData.Pcs_Per_Karton;
     }
     
-    // Validasi stok
     if ((pcsDiKeranjang + pcsAkanDitambah) > itemData.Stok_Pcs) {
         const sisaStokEfektif = itemData.Stok_Pcs - pcsDiKeranjang;
         alert(`Stok tidak mencukupi!\n\nStok Awal: ${itemData.Stok_Pcs} Pcs\nSudah di Keranjang: ${pcsDiKeranjang} Pcs\nSisa Stok Tersedia: ${sisaStokEfektif} Pcs`);
@@ -502,7 +483,6 @@ function handleTambahKeKeranjang(e) {
     else if (satuanDiminta === 'Lusin') hargaSatuan = itemData.Harga_Lusin;
     else if (satuanDiminta === 'Karton') hargaSatuan = itemData.Harga_Karton;
 
-    // Buat item baru untuk keranjang
     const itemDiKeranjang = {
         idBarang: itemData.ID_Barang,
         namaBarang: itemData.Nama_Barang,
@@ -520,38 +500,29 @@ function handleTambahKeKeranjang(e) {
         }
     };
     
-    // Cek apakah item dengan satuan yang sama sudah ada, jika ya, gabungkan
-    const indexAda = keranjang.findIndex(item => item.idBarang === itemDiKeranjang.idBarang && item.satuan === itemDiKeranjang.satuan);
+    const indexAda = AppState.keranjang.findIndex(item => item.idBarang === itemDiKeranjang.idBarang && item.satuan === itemDiKeranjang.satuan);
     if (indexAda > -1) {
-        keranjang[indexAda].jumlah += jumlahDiminta;
-        keranjang[indexAda].jumlahPcs += pcsAkanDitambah;
-        keranjang[indexAda].subtotal = keranjang[indexAda].jumlah * keranjang[indexAda].hargaSatuan;
+        AppState.keranjang[indexAda].jumlah += jumlahDiminta;
+        AppState.keranjang[indexAda].jumlahPcs += pcsAkanDitambah;
+        AppState.keranjang[indexAda].subtotal = AppState.keranjang[indexAda].jumlah * AppState.keranjang[indexAda].hargaSatuan;
     } else {
-        keranjang.push(itemDiKeranjang);
+        AppState.keranjang.push(itemDiKeranjang);
     }
     
-    // 1. Render ulang tampilan keranjang dengan item baru
     renderKeranjang();
-    
-    // 2. Sembunyikan kembali form detail item (Nama barang, jumlah, satuan)
     formTambahKeranjang.classList.add('hidden');
-    
-    // 3. Reset state internal untuk persiapan input berikutnya
-    itemTerpilihDataInput.value = '';        // Hapus data JSON item yang tadi dipilih dari input tersembunyi.
-    namaBarangTerpilihSpan.textContent = ''; // Kosongkan tampilan teks nama barang terpilih.
-    inputJumlahKasir.value = 1;             // Kembalikan input jumlah ke nilai default '1'.
-    
-    // 4. Siapkan input pencarian utama untuk alur kerja yang cepat
-    inputCari.value = ''; // KOSONGKAN isi kotak pencarian. Ini sangat penting!
-    inputCari.focus();    // Pindahkan kursor (fokus) langsung ke kotak pencarian yang kini sudah kosong.
+    itemTerpilihDataInput.value = '';
+    namaBarangTerpilihSpan.textContent = '';
+    inputJumlahKasir.value = 1;
+    inputCari.value = '';
+    inputCari.focus();
 }
 
 function renderKeranjang() {
     tabelKeranjangBody.innerHTML = '';
     let total = 0;
-    keranjang.forEach((item, index) => {
+    AppState.keranjang.forEach((item, index) => {
         const tr = document.createElement('tr');
-        // Buat opsi satuan berdasarkan data asli yang disimpan
         let satuanOptions = `<option value="Pcs">Pcs</option>`;
         const dataAsli = item.dataAsli;
         if (dataAsli.Harga_Lusin > 0 && dataAsli.Pcs_Per_Lusin > 0) satuanOptions += `<option value="Lusin">Lusin</option>`;
@@ -573,10 +544,10 @@ function renderKeranjang() {
 }
 
 function updateKuantitasKeranjang(index, jumlahBaru) {
-    const item = keranjang[index];
+    const item = AppState.keranjang[index];
     if (!item) return;
     
-    const itemDataAsli = semuaDataBarang.find(i => i.ID_Barang === item.idBarang);
+    const itemDataAsli = AppState.barang.find(i => i.ID_Barang === item.idBarang);
     if (!itemDataAsli) {
         alert('Data barang tidak ditemukan. Coba muat ulang halaman.');
         renderKeranjang();
@@ -584,8 +555,8 @@ function updateKuantitasKeranjang(index, jumlahBaru) {
     }
 
     const stokAwal = itemDataAsli.Stok_Pcs;
-    const pcsLainDiKeranjang = keranjang
-        .filter((_, i) => i !== parseInt(index) && keranjang[i].idBarang === item.idBarang)
+    const pcsLainDiKeranjang = AppState.keranjang
+        .filter((_, i) => i !== parseInt(index) && AppState.keranjang[i].idBarang === item.idBarang)
         .reduce((total, itemLain) => total + itemLain.jumlahPcs, 0);
     
     let pcsDimintaSekarang = 0;
@@ -595,7 +566,7 @@ function updateKuantitasKeranjang(index, jumlahBaru) {
 
     if ((pcsLainDiKeranjang + pcsDimintaSekarang) > stokAwal) {
         alert(`Stok tidak mencukupi!\n\nStok Awal: ${stokAwal} Pcs\nItem lain di Keranjang: ${pcsLainDiKeranjang} Pcs\nSisa Stok Tersedia: ${stokAwal - pcsLainDiKeranjang} Pcs`);
-        renderKeranjang(); // Reset ke nilai sebelumnya
+        renderKeranjang();
         return;
     }
     
@@ -606,10 +577,10 @@ function updateKuantitasKeranjang(index, jumlahBaru) {
 }
 
 function updateSatuanKeranjang(index, satuanBaru) {
-    const item = keranjang[index];
+    const item = AppState.keranjang[index];
     if (!item) return;
 
-    const itemDataAsliServer = semuaDataBarang.find(i => i.ID_Barang === item.idBarang);
+    const itemDataAsliServer = AppState.barang.find(i => i.ID_Barang === item.idBarang);
     if (!itemDataAsliServer) {
         alert('Data barang tidak ditemukan. Coba muat ulang halaman.');
         return;
@@ -619,7 +590,7 @@ function updateSatuanKeranjang(index, satuanBaru) {
     let jumlahPcsBaru = 0;
     if (satuanBaru === 'Pcs') {
         hargaSatuanBaru = itemDataAsliServer.Harga_Pcs;
-        jumlahPcsBaru = item.jumlah * 1; // Konversi Pcs ke Pcs
+        jumlahPcsBaru = item.jumlah * 1;
     } else if (satuanBaru === 'Lusin') {
         hargaSatuanBaru = itemDataAsliServer.Harga_Lusin;
         jumlahPcsBaru = item.jumlah * itemDataAsliServer.Pcs_Per_Lusin;
@@ -629,13 +600,13 @@ function updateSatuanKeranjang(index, satuanBaru) {
     }
 
     const stokAwal = itemDataAsliServer.Stok_Pcs;
-    const pcsLainDiKeranjang = keranjang
-        .filter((_, i) => i !== parseInt(index) && keranjang[i].idBarang === item.idBarang)
+    const pcsLainDiKeranjang = AppState.keranjang
+        .filter((_, i) => i !== parseInt(index) && AppState.keranjang[i].idBarang === item.idBarang)
         .reduce((total, itemLain) => total + itemLain.jumlahPcs, 0);
 
     if ((pcsLainDiKeranjang + jumlahPcsBaru) > stokAwal) {
         alert(`Stok tidak mencukupi untuk mengubah ke satuan ${satuanBaru}!`);
-        renderKeranjang(); // Reset ke nilai sebelumnya
+        renderKeranjang();
         return;
     }
     
@@ -647,25 +618,24 @@ function updateSatuanKeranjang(index, satuanBaru) {
 }
 
 function hitungKembalian() {
-    const total = keranjang.reduce((sum, item) => sum + item.subtotal, 0);
+    const total = AppState.keranjang.reduce((sum, item) => sum + item.subtotal, 0);
     const bayar = parseFloat(inputBayar.value) || 0;
     const kembali = bayar - total;
     kembalianSpan.textContent = formatRupiah(kembali);
-    btnProsesTransaksi.disabled = !(kembali >= 0 && keranjang.length > 0);
+    btnProsesTransaksi.disabled = !(kembali >= 0 && AppState.keranjang.length > 0);
 }
 
 async function prosesTransaksi() {
-    if (keranjang.length === 0) {
+    if (AppState.keranjang.length === 0) {
         alert('Keranjang masih kosong!');
         return;
     }
-    const user = JSON.parse(sessionStorage.getItem('user'));
     const dataUntukKirim = {
-        kasir: user.Nama_Lengkap,
-        keranjang: keranjang,
-        totalBelanja: keranjang.reduce((sum, item) => sum + item.subtotal, 0),
+        kasir: AppState.currentUser.Nama_Lengkap,
+        keranjang: AppState.keranjang,
+        totalBelanja: AppState.keranjang.reduce((sum, item) => sum + item.subtotal, 0),
         jumlahBayar: parseFloat(inputBayar.value),
-        kembalian: (parseFloat(inputBayar.value) - keranjang.reduce((sum, item) => sum + item.subtotal, 0))
+        kembalian: (parseFloat(inputBayar.value) - AppState.keranjang.reduce((sum, item) => sum + item.subtotal, 0))
     };
 
     btnProsesTransaksi.disabled = true;
@@ -682,8 +652,8 @@ async function prosesTransaksi() {
         if (result.status === 'sukses') {
             menuTransaksi.classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
-            semuaDataBarang = []; // Reset cache data barang agar stok terupdate saat transaksi berikutnya
-            semuaDataLaporan = []; // Reset cache laporan
+            AppState.barang = [];
+            AppState.laporan = [];
         } else {
             tampilkanNotifikasi(result.message, 'error');
             btnProsesTransaksi.disabled = false;
@@ -709,15 +679,12 @@ function tampilkanStruk(dataTransaksi, idTransaksi) {
     areaStruk.classList.remove('hidden');
 }
 
-// Ganti seluruh fungsi cetakStruk() yang lama dengan versi baru ini.
-// Fungsi ini hanya memicu proses cetak, sisanya diatur oleh CSS.
-
 function cetakStruk() {
     window.print();
 }
 
 async function muatLaporan() {
-    if (semuaDataLaporan.length > 0) {
+    if (AppState.laporan.length > 0) {
         renderTabelLaporan();
         return;
     }
@@ -727,7 +694,7 @@ async function muatLaporan() {
         const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`);
         const result = await response.json();
         if (result.status === 'sukses') {
-            semuaDataLaporan = result.data;
+            AppState.laporan = result.data;
             renderTabelLaporan();
         } else {
             tampilkanNotifikasi('Gagal memuat laporan: ' + result.message, 'error');
@@ -741,7 +708,7 @@ async function muatLaporan() {
 
 function renderTabelLaporan() {
     tabelLaporanBody.innerHTML = '';
-    semuaDataLaporan.forEach(trx => {
+    AppState.laporan.forEach(trx => {
         const detailBarang = JSON.parse(trx.Detail_Barang_JSON).map(item => `${item.namaBarang} (${item.jumlah} ${item.satuan})`).join('<br>');
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -754,7 +721,6 @@ function renderTabelLaporan() {
         tabelLaporanBody.appendChild(tr);
     });
 }
-
 
 // ====================================================================
 // TAHAP 5: EVENT LISTENERS UTAMA
@@ -783,10 +749,8 @@ navManajemen.addEventListener('click', () => {
 navTransaksi.addEventListener('click', () => {
     setActiveNav(navTransaksi);
     showMenu(menuTransaksi);
-    // Tambahkan logika ini:
-    // Jika data barang belum ada di cache (array kosong), panggil fungsi muatDataBarang.
-    if (semuaDataBarang.length === 0) {
-        muatDataBarang(); 
+    if (AppState.barang.length === 0) {
+        muatDataBarang();
     }
 });
 navLaporan.addEventListener('click', () => {
@@ -806,7 +770,7 @@ tabelBarangBody.addEventListener('click', async (e) => {
     const target = e.target;
     if (target.classList.contains('btn-ubah')) {
         const id = target.dataset.id;
-        const dataBarang = semuaDataBarang.find(item => item.ID_Barang === id);
+        const dataBarang = AppState.barang.find(item => item.ID_Barang === id);
         if (dataBarang) masukModeEdit(dataBarang);
     }
     if (target.classList.contains('btn-hapus')) {
@@ -822,15 +786,13 @@ tabelBarangBody.addEventListener('click', async (e) => {
                 const result = await response.json();
                 if (result.status === 'sukses') {
                     tampilkanNotifikasi(result.message, 'sukses');
-                    semuaDataBarang = [];
+                    AppState.barang = [];
                     muatDataBarang();
                 } else {
                     tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
                 }
             } catch (error) {
                 tampilkanNotifikasi('Terjadi kesalahan jaringan.', 'error');
-            } finally {
-                // Tombol akan hilang setelah render ulang, tidak perlu reset state
             }
         }
     }
@@ -842,7 +804,7 @@ tabelPenggunaBody.addEventListener('click', async (e) => {
     const target = e.target;
     if (target.classList.contains('btn-ubah')) {
         const id = target.dataset.id;
-        const dataPengguna = semuaDataPengguna.find(user => user.ID_Pengguna === id);
+        const dataPengguna = AppState.pengguna.find(user => user.ID_Pengguna === id);
         if (dataPengguna) masukModeEditPengguna(dataPengguna);
     }
     if (target.classList.contains('btn-hapus')) {
@@ -856,7 +818,7 @@ tabelPenggunaBody.addEventListener('click', async (e) => {
                 const result = await response.json();
                 if (result.status === 'sukses') {
                     tampilkanNotifikasi(result.message, 'sukses');
-                    semuaDataPengguna = [];
+                    AppState.pengguna = [];
                     muatDataPengguna();
                 } else {
                     tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
@@ -868,19 +830,15 @@ tabelPenggunaBody.addEventListener('click', async (e) => {
     }
 });
 
-// ====================================================================
-// === EVENT LISTENER DENGAN PERBAIKAN (REKOMENDASI KODE BARANG) ===
-// ====================================================================
 inputKodeBarang.addEventListener('keyup', (e) => {
     const query = inputKodeBarang.value.toLowerCase();
-    if (query.length < 1 || modeEdit) {
+    if (query.length < 1 || AppState.modeEdit.barang) {
         rekomendasiKodeDiv.classList.add('hidden');
         rekomendasiKodeDiv.innerHTML = '';
         return;
     }
 
-    const hasilFilter = semuaDataBarang.filter(item => {
-        // PERBAIKAN: Memastikan data diubah ke String sebelum .toLowerCase()
+    const hasilFilter = AppState.barang.filter(item => {
         const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
         const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
         return kode.includes(query) || nama.includes(query);
@@ -904,7 +862,6 @@ inputKodeBarang.addEventListener('keyup', (e) => {
     }
 });
 
-
 document.addEventListener('click', (e) => {
     if (!e.target.closest('#rekomendasi-kode') && e.target !== inputKodeBarang) {
         rekomendasiKodeDiv.classList.add('hidden');
@@ -925,8 +882,8 @@ document.addEventListener('click', (e) => {
 });
 
 inputCari.addEventListener('keyup', () => {
-    clearTimeout(timeoutCari);
-    timeoutCari = setTimeout(cariBarang, 300);
+    clearTimeout(AppState.timeoutCari);
+    AppState.timeoutCari = setTimeout(cariBarang, 300);
 });
 
 formTambahKeranjang.addEventListener('submit', handleTambahKeKeranjang);
@@ -936,7 +893,7 @@ btnProsesTransaksi.addEventListener('click', prosesTransaksi);
 tabelKeranjangBody.addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-hapus')) {
         const index = e.target.dataset.index;
-        keranjang.splice(index, 1);
+        AppState.keranjang.splice(index, 1);
         renderKeranjang();
     }
 });
@@ -948,7 +905,7 @@ tabelKeranjangBody.addEventListener('change', (e) => {
         if (jumlahBaru > 0) {
             updateKuantitasKeranjang(index, jumlahBaru);
         } else {
-            keranjang.splice(index, 1);
+            AppState.keranjang.splice(index, 1);
             renderKeranjang();
         }
     }
@@ -960,7 +917,7 @@ tabelKeranjangBody.addEventListener('change', (e) => {
 
 btnCetakStruk.addEventListener('click', cetakStruk);
 btnTransaksiBaru.addEventListener('click', () => {
-    keranjang = [];
+    AppState.keranjang = [];
     renderKeranjang();
     inputBayar.value = '';
     hitungKembalian();
