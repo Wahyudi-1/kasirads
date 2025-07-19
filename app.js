@@ -70,7 +70,6 @@ export const kembalianSpan = document.getElementById('kembalian');
 export const btnProsesTransaksi = document.getElementById('btn-proses-transaksi');
 export const tabelLaporanBody = document.getElementById('tabel-laporan-body');
 export const loadingLaporan = document.getElementById('loading-laporan');
-// === PERBAIKAN: Menambahkan selektor untuk tombol filter ===
 export const btnFilterLaporan = document.getElementById('btn-filter-laporan');
 export const btnResetFilter = document.getElementById('btn-reset-filter');
 export const areaStruk = document.getElementById('area-struk');
@@ -99,38 +98,35 @@ btnLogout.addEventListener('click', ui.handleLogout);
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
+    // Kosongkan tabel dan pencarian saat tab dibuka
+    ui.renderTabelBarang([]);
+    inputCariManajemen.value = '';
 });
 
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    if (AppState.barang.length === 0) {
-        api.muatDataBarang();
-    }
+    // Data sudah ada di AppState, tidak perlu fetch lagi.
 });
 
-// === PERBAIKAN: Logika navigasi laporan diubah untuk mendukung filter ===
 navLaporan.addEventListener('click', () => {
     ui.setActiveNav(navLaporan);
     ui.showMenu(menuLaporan);
-    // Hanya muat data dari server jika cache kosong
-    if (AppState.laporan.length === 0) {
-        api.muatLaporan();
-    } else {
-        // Jika data sudah ada di cache, cukup pastikan filter diisi
-        ui.populasiFilterKasir();
-    }
+    // Panggil fungsi yang hanya merender dari data yang sudah ada di cache.
+    api.muatLaporan(); 
 });
 
 navPengguna.addEventListener('click', () => {
     ui.setActiveNav(navPengguna);
     ui.showMenu(menuPengguna);
+    // Panggil fungsi yang hanya merender dari data yang sudah ada di cache.
     api.muatDataPengguna();
 });
 
 // --- Event Listener untuk Kontrol Pencarian di Halaman Manajemen ---
 btnCariManajemen.addEventListener('click', () => {
     const query = inputCariManajemen.value;
+    // Panggil fungsi muatDataBarang versi baru yang hanya filter dari cache
     api.muatDataBarang(query);
 });
 
@@ -142,10 +138,9 @@ inputCariManajemen.addEventListener('keypress', (e) => {
 });
 
 btnTampilkanSemua.addEventListener('click', () => {
-    if (confirm("Memuat semua data mungkin akan lambat jika database besar. Lanjutkan?")) {
-        inputCariManajemen.value = '';
-        api.muatDataBarang();
-    }
+    inputCariManajemen.value = '';
+    // Panggil muatDataBarang tanpa query untuk menampilkan semua data dari cache
+    api.muatDataBarang(); 
 });
 
 // --- Event Listener CRUD Barang & Pengguna ---
@@ -273,7 +268,6 @@ btnTransaksiBaruKasir.addEventListener('click', () => {
     }
 });
 
-// === PERBAIKAN: Menambahkan event listener untuk tombol filter laporan ===
 btnFilterLaporan.addEventListener('click', ui.terapkanFilterLaporan);
 
 btnResetFilter.addEventListener('click', () => {
@@ -281,6 +275,5 @@ btnResetFilter.addEventListener('click', () => {
     document.getElementById('filter-tanggal-selesai').value = '';
     document.getElementById('filter-kasir').value = '';
     document.getElementById('filter-status').value = '';
-    // Kosongkan tabel hasil filter
     ui.renderTabelLaporan([]);
 });
