@@ -525,10 +525,20 @@ function handleTambahKeKeranjang(e) {
         keranjang.push(itemDiKeranjang);
     }
     
+    // 1. Render ulang tampilan keranjang dengan item baru
     renderKeranjang();
+    
+    // 2. Sembunyikan kembali form detail item (Nama barang, jumlah, satuan)
     formTambahKeranjang.classList.add('hidden');
-    inputJumlahKasir.value = 1;
-    inputCari.focus();
+    
+    // 3. Reset state internal untuk persiapan input berikutnya
+    itemTerpilihDataInput.value = '';        // Hapus data JSON item yang tadi dipilih dari input tersembunyi.
+    namaBarangTerpilihSpan.textContent = ''; // Kosongkan tampilan teks nama barang terpilih.
+    inputJumlahKasir.value = 1;             // Kembalikan input jumlah ke nilai default '1'.
+    
+    // 4. Siapkan input pencarian utama untuk alur kerja yang cepat
+    inputCari.value = ''; // KOSONGKAN isi kotak pencarian. Ini sangat penting!
+    inputCari.focus();    // Pindahkan kursor (fokus) langsung ke kotak pencarian yang kini sudah kosong.
 }
 
 function renderKeranjang() {
