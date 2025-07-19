@@ -39,22 +39,17 @@ export async function checkLoginStatus() {
         
         loginContainer.classList.add('hidden');
         appContainer.classList.remove('hidden');
+        infoNamaKasir.textContent = 'Memuat data aplikasi...';
         
-        // Hanya muat semua data dari server jika cache (AppState.barang) masih kosong.
-        // Ini terjadi saat pertama kali login atau saat halaman di-refresh.
-        if (AppState.barang.length === 0) { 
-            infoNamaKasir.textContent = 'Memuat data aplikasi...';
-            await muatSemuaDataAwal();
-        }
+        await muatSemuaDataAwal();
 
-        // Setelah data dipastikan ada, perbarui UI sepenuhnya.
         infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
         if (userData.Role === 'admin') {
             navPengguna.classList.remove('hidden');
         } else {
             navPengguna.classList.add('hidden');
         }
-        navManajemen.click(); // Buka tab default
+        navManajemen.click();
     } else {
         loginContainer.classList.remove('hidden');
         appContainer.classList.add('hidden');
@@ -70,8 +65,12 @@ export async function handleLogin(formData) {
     const result = await handleLoginApi(formData);
 
     if (result.success) {
-        // Setelah API login berhasil, panggil checkLoginStatus.
-        // checkLoginStatus sekarang akan menangani pemuatan data awal dan setup UI.
+        loginContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        infoNamaKasir.textContent = 'Memuat data aplikasi...'; 
+        
+        await muatSemuaDataAwal();
+        
         await checkLoginStatus(); 
     } else {
         loginStatus.textContent = result.message;
@@ -378,9 +377,7 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
     areaStruk.classList.remove('hidden');
 }
 
-export function cetakStruk() {
-    window.print();
-}
+export function cetakStruk() { window.print(); }
 
 export function setActiveNav(button) {
     [navManajemen, navTransaksi, navLaporan, navPengguna].forEach(btn => btn.classList.remove('active'));
@@ -469,12 +466,10 @@ function formatStrukUntukWhatsApp(dataTransaksi, idTransaksi) {
     teksStruk += `Waktu: ${new Date().toLocaleString('id-ID')}\n`;
     teksStruk += `Kasir: ${dataTransaksi.kasir}\n`;
     teksStruk += `-----------------------------------\n`;
-
     dataTransaksi.keranjang.forEach(item => {
         teksStruk += `*${item.namaBarang}*\n`;
         teksStruk += `${item.jumlah} ${terjemahkanSatuan(item.satuan)} x ${formatRupiah(item.hargaSatuan)} = *${formatRupiah(item.subtotal)}*\n`;
     });
-
     teksStruk += `-----------------------------------\n`;
     teksStruk += `Total Belanja: *${formatRupiah(dataTransaksi.totalBelanja)}*\n`;
     teksStruk += `Bayar: ${formatRupiah(dataTransaksi.jumlahBayar)}\n`;
@@ -517,17 +512,8 @@ export function handleKirimWhatsApp() {
     window.open(urlWhatsApp, '_blank');
 }
 
-function parseTanggalLaporan(tanggalString) {
-    if (!tanggalString || typeof tanggalString !== 'string') return null;
-    const match = tanggalString.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2})[.:](\d{1,2})/);
-    if (!match) return null;
-    const [, hari, bulan, tahun, jam, menit] = match;
-    return new Date(tahun, bulan - 1, hari, jam, menit);
-}
-
 export function populasiFilterKasir() {
     const filterKasir = document.getElementById('filter-kasir');
-    if (!filterKasir) return;
     const namaKasir = [...new Set(AppState.laporan.map(trx => trx.Kasir).filter(Boolean))];
     while (filterKasir.options.length > 1) {
         filterKasir.remove(1);
@@ -550,16 +536,14 @@ export function terapkanFilterLaporan() {
     if (tanggalSelesai) tanggalSelesai.setHours(23, 59, 59, 999);
 
     const dataTersaring = AppState.laporan.filter(trx => {
-        const tanggalTrx = parseTanggalLaporan(trx.Timestamp_Transaksi);
-        if (!tanggalTrx) return false;
+        const tanggalTrx = new Date(trx.Timestamp_Transaksi); 
+        if (isNaN(tanggalTrx.getTime())) return false; 
         if (tanggalMulai && tanggalTrx < tanggalMulai) return false;
         if (tanggalSelesai && tanggalTrx > tanggalSelesai) return false;
         if (kasirValue && trx.Kasir !== kasirValue) return false;
-        const statusTransaksi = trx.Status || 'COMPLETED';
-        if (statusValue && statusTransaksi !== statusValue) return false;
+        if (statusValue && (trx.Status || 'COMPLETED') !== statusValue) return false;
         return true;
     });
-
     renderTabelLaporan(dataTersaring);
 }
 
@@ -567,10 +551,14 @@ export function renderTabelLaporan(data) {
     tabelLaporanBody.innerHTML = '';
     data.forEach(trx => {
         const detailBarang = JSON.parse(trx.Detail_Barang_JSON).map(item => `${item.namaBarang} (${item.jumlah} ${terjemahkanSatuan(item.satuan)})`).join('<br>');
+        const tanggalObj = new Date(trx.Timestamp_Transaksi);
+        const tanggalFormatted = !isNaN(tanggalObj.getTime()) 
+            ? tanggalObj.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }) 
+            : 'Tanggal Invalid';
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${trx.ID_Transaksi}</td>
-            <td>${trx.Timestamp_Transaksi}</td>
+            <td>${tanggalFormatted}</td> 
             <td>${trx.Kasir || ''}</td>
             <td>${detailBarang}</td>
             <td>${formatRupiah(trx.Total_Belanja)}</td>
