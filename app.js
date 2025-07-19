@@ -71,8 +71,9 @@ export const areaStruk = document.getElementById('area-struk');
 export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
 export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
-// === PERBAIKAN: Menambahkan selektor untuk tombol WhatsApp ===
 export const btnKirimWhatsApp = document.getElementById('btn-kirim-whatsapp');
+// === PERBAIKAN: Menambahkan kembali selektor untuk tombol di struk dan di kasir ===
+export const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
 export const btnTransaksiBaruKasir = document.getElementById('btn-transaksi-baru-kasir');
 
 
@@ -202,9 +203,19 @@ btnUbahTransaksi.addEventListener('click', () => {
     ui.handleBatalDanUlangi();
 });
 
-// === PERBAIKAN: Menambahkan event listener untuk tombol WhatsApp ===
 btnKirimWhatsApp.addEventListener('click', () => {
     ui.handleKirimWhatsApp();
+});
+
+// === PERBAIKAN: Menambahkan kembali event listener untuk tombol di halaman struk ===
+btnTransaksiBaru.addEventListener('click', () => {
+    AppState.keranjang = [];
+    ui.renderKeranjang();
+    inputBayar.value = '';
+    ui.hitungKembalian();
+    menuTransaksi.classList.remove('hidden');
+    areaStruk.classList.add('hidden');
+    inputCari.focus();
 });
 
 btnTransaksiBaruKasir.addEventListener('click', () => {
