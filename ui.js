@@ -368,27 +368,11 @@ export function hitungKembalian() {
 export function tampilkanStruk(dataTransaksi, idTransaksi) {
     dataTransaksiTerakhir = dataTransaksi;
     idTransaksiTerakhir = idTransaksi;
-
-    let htmlStruk = `<h3>Toko ADS Gedangan</h3>`;
-    htmlStruk += `<p style="text-align: center; margin-top: -5px; margin-bottom: 10px;">Terima kasih telah berbelanja!</p>`;
-    htmlStruk += `<hr>`;
-    htmlStruk += `<div class="struk-item"><span>ID Transaksi:</span><span>${idTransaksi}</span></div>`;
-    htmlStruk += `<div class="struk-item"><span>Waktu:</span><span>${new Date().toLocaleString('id-ID')}</span></div>`;
-    htmlStruk += `<div class="struk-item"><span>Kasir:</span><span>${dataTransaksi.kasir}</span></div>`;
-    htmlStruk += `<hr>`;
-
+    let htmlStruk = `<h3>Toko ADS Gedangan</h3><p style="text-align: center; margin-top: -5px; margin-bottom: 10px;">Terima kasih telah berbelanja!</p><hr><div class="struk-item"><span>ID Transaksi:</span><span>${idTransaksi}</span></div><div class="struk-item"><span>Waktu:</span><span>${new Date().toLocaleString('id-ID')}</span></div><div class="struk-item"><span>Kasir:</span><span>${dataTransaksi.kasir}</span></div><hr>`;
     dataTransaksi.keranjang.forEach(item => {
-        htmlStruk += `<div>${item.namaBarang}</div>`;
-        htmlStruk += `<div class="struk-item"><span>${item.jumlah} ${terjemahkanSatuan(item.satuan)} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
+        htmlStruk += `<div>${item.namaBarang}</div><div class="struk-item"><span>${item.jumlah} ${terjemahkanSatuan(item.satuan)} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
     });
-
-    htmlStruk += `<hr>`;
-    htmlStruk += `<div class="struk-item"><strong>Total Belanja</strong><strong>${formatRupiah(dataTransaksi.totalBelanja)}</strong></div>`;
-    htmlStruk += `<div class="struk-item"><span>Bayar</span><span>${formatRupiah(dataTransaksi.jumlahBayar)}</span></div>`;
-    htmlStruk += `<div class="struk-item"><span>Kembali</span><span>${formatRupiah(dataTransaksi.kembalian)}</span></div>`;
-    htmlStruk += `<hr>`;
-    htmlStruk += `<p style="text-align:center; margin-top:10px;">Semoga Berkah dan Sehat Selalu</p>`;
-    
+    htmlStruk += `<hr><div class="struk-item"><strong>Total Belanja</strong><strong>${formatRupiah(dataTransaksi.totalBelanja)}</strong></div><div class="struk-item"><span>Bayar</span><span>${formatRupiah(dataTransaksi.jumlahBayar)}</span></div><div class="struk-item"><span>Kembali</span><span>${formatRupiah(dataTransaksi.kembalian)}</span></div><hr><p style="text-align:center; margin-top:10px;">Semoga Berkah dan Sehat Selalu</p>`;
     strukContent.innerHTML = htmlStruk;
     areaStruk.classList.remove('hidden');
 }
@@ -544,6 +528,7 @@ function parseTanggalLaporan(tanggalString) {
 
 export function populasiFilterKasir() {
     const filterKasir = document.getElementById('filter-kasir');
+    if (!filterKasir) return;
     const namaKasir = [...new Set(AppState.laporan.map(trx => trx.Kasir).filter(Boolean))];
     while (filterKasir.options.length > 1) {
         filterKasir.remove(1);
