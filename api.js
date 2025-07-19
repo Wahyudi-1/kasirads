@@ -263,3 +263,21 @@ export async function muatLaporan() {
         loadingLaporan.classList.add('hidden');
     }
 }
+
+// ====================================================================
+// === FUNGSI BARU UNTUK MEMBATALKAN TRANSAKSI ===
+// ====================================================================
+export async function batalkanTransaksiApi(idTransaksi) {
+    const formData = new FormData();
+    formData.append('action', API_ACTIONS.BATALKAN_TRANSAKSI); // Menggunakan konstanta baru
+    formData.append('idTransaksi', idTransaksi);
+  
+    try {
+      const response = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+      const result = await response.json();
+      return result; // Kembalikan hasil dari backend untuk diproses di UI
+    } catch (error) {
+      // Tangani error jaringan
+      return { status: 'error', message: 'Kesalahan jaringan saat mencoba membatalkan transaksi.' };
+    }
+}
