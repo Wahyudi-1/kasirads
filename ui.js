@@ -23,6 +23,24 @@ const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 };
 
+/**
+ * Menerjemahkan nilai satuan logis menjadi teks tampilan yang lebih deskriptif.
+ * @param {string} satuan - Nilai satuan ('Pcs', 'Lusin', 'Karton').
+ * @returns {string} - Teks tampilan yang sesuai.
+ */
+function terjemahkanSatuan(satuan) {
+    if (satuan === 'Pcs') {
+        return 'Pcs / Kg';
+    }
+    if (satuan === 'Lusin') {
+        return 'Paket / Lusin';
+    }
+    if (satuan === 'Karton') {
+        return 'Karton / Sak';
+    }
+    return satuan;
+}
+
 export function checkLoginStatus() {
     const user = sessionStorage.getItem('user');
     if (user) {
@@ -173,7 +191,6 @@ export function cariBarang() {
         hasilFilter.forEach(item => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'rekomendasi-item';
-            // PERUBAHAN DI SINI: Mengubah label satuan stok dasar
             itemDiv.innerHTML = `<strong>${item.Nama_Barang}</strong> <br><small>Kode: ${item.Kode_Barang} | Stok: ${item.Stok_Pcs} Pcs/Kg</small>`;
             itemDiv.addEventListener('click', () => pilihBarang(item));
             hasilPencarianDiv.appendChild(itemDiv);
@@ -186,12 +203,8 @@ export function cariBarang() {
 export function pilihBarang(item) {
     formTambahKeranjang.classList.remove('hidden');
     itemTerpilihDataInput.value = JSON.stringify(item);
-    // PERUBAHAN DI SINI: Mengubah label satuan stok dasar
     namaBarangTerpilihSpan.innerHTML = `${item.Nama_Barang} <small>(Stok: ${item.Stok_Pcs} Pcs/Kg)</small>`;
     selectSatuanKasir.innerHTML = '';
-
-    // PERUBAHAN DI SINI: Mengubah teks yang TAMPIL di dropdown.
-    // PENTING: Nilai kedua ('Pcs', 'Lusin', 'Karton') TIDAK DIUBAH.
     selectSatuanKasir.add(new Option(`Pcs / Kg - ${formatRupiah(item.Harga_Pcs)}`, 'Pcs'));
     if (item.Harga_Lusin > 0 && item.Pcs_Per_Lusin > 0) {
         selectSatuanKasir.add(new Option(`Paket / Lusin - ${formatRupiah(item.Harga_Lusin)}`, 'Lusin'));
@@ -254,8 +267,6 @@ export function renderKeranjang() {
     let total = 0;
     AppState.keranjang.forEach((item, index) => {
         const tr = document.createElement('tr');
-        // PERUBAHAN DI SINI: Mengubah teks yang TAMPIL di dropdown keranjang.
-        // PENTING: Nilai `value` TETAP SAMA.
         let satuanOptions = `<option value="Pcs">Pcs / Kg</option>`;
         const dataAsli = item.dataAsli;
         if (dataAsli.Harga_Lusin > 0 && dataAsli.Pcs_Per_Lusin > 0) satuanOptions += `<option value="Lusin">Paket / Lusin</option>`;
@@ -360,7 +371,7 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
 
     dataTransaksi.keranjang.forEach(item => {
         htmlStruk += `<div>${item.namaBarang}</div>`;
-        htmlStruk += `<div class="struk-item"><span>${item.jumlah} ${item.satuan} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
+        htmlStruk += `<div class="struk-item"><span>${item.jumlah} ${terjemahkanSatuan(item.satuan)} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
     });
 
     htmlStruk += `<hr>`;
@@ -485,7 +496,7 @@ function formatStrukUntukWhatsApp(dataTransaksi, idTransaksi) {
 
     dataTransaksi.keranjang.forEach(item => {
         teksStruk += `*${item.namaBarang}*\n`;
-        teksStruk += `${item.jumlah} ${item.satuan} x ${formatRupiah(item.hargaSatuan)} = *${formatRupiah(item.subtotal)}*\n`;
+        teksStruk += `${item.jumlah} ${terjemahkanSatuan(item.satuan)} x ${formatRupiah(item.hargaSatuan)} = *${formatRupiah(item.subtotal)}*\n`;
     });
 
     teksStruk += `-----------------------------------\n`;
