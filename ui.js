@@ -5,9 +5,7 @@
 import { AppState, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
 import { handleLoginApi, batalkanTransaksiApi } from './api.js';
 
-// ====================================================================
-// === Variabel untuk menyimpan state transaksi terakhir ===
-// ====================================================================
+// --- Variabel untuk menyimpan state transaksi terakhir ---
 export let dataTransaksiTerakhir = null;
 export let idTransaksiTerakhir = null;
 
@@ -343,14 +341,26 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
     dataTransaksiTerakhir = dataTransaksi;
     idTransaksiTerakhir = idTransaksi;
 
-    let htmlStruk = `<h3>Toko ADS Gedangan</h3><p>ID Transaksi: ${idTransaksi}</p><p>Waktu: ${new Date().toLocaleString('id-ID')}</p><p>Kasir: ${dataTransaksi.kasir}</p><hr>`;
+    // Perbaikan: Susunan kata dan struktur disamakan dengan format WhatsApp
+    let htmlStruk = `<h3>Toko ADS Gedangan</h3>`;
+    htmlStruk += `<p style="text-align: center; margin-top: -5px; margin-bottom: 10px;">Terima kasih telah berbelanja!</p>`;
+    htmlStruk += `<hr>`;
+    htmlStruk += `<div class="struk-item"><span>ID Transaksi:</span><span>${idTransaksi}</span></div>`;
+    htmlStruk += `<div class="struk-item"><span>Waktu:</span><span>${new Date().toLocaleString('id-ID')}</span></div>`;
+    htmlStruk += `<div class="struk-item"><span>Kasir:</span><span>${dataTransaksi.kasir}</span></div>`;
+    htmlStruk += `<hr>`;
+
     dataTransaksi.keranjang.forEach(item => {
-        htmlStruk += `<div>${item.namaBarang}</div><div class="struk-item"><span>${item.jumlah} ${item.satuan} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
+        htmlStruk += `<div>${item.namaBarang}</div>`;
+        htmlStruk += `<div class="struk-item"><span>${item.jumlah} ${item.satuan} x ${formatRupiah(item.hargaSatuan)}</span><span>${formatRupiah(item.subtotal)}</span></div>`;
     });
-    htmlStruk += `<hr><div class="struk-item"><strong>Total</strong><strong>${formatRupiah(dataTransaksi.totalBelanja)}</strong></div>`;
+
+    htmlStruk += `<hr>`;
+    htmlStruk += `<div class="struk-item"><strong>Total Belanja</strong><strong>${formatRupiah(dataTransaksi.totalBelanja)}</strong></div>`;
     htmlStruk += `<div class="struk-item"><span>Bayar</span><span>${formatRupiah(dataTransaksi.jumlahBayar)}</span></div>`;
     htmlStruk += `<div class="struk-item"><span>Kembali</span><span>${formatRupiah(dataTransaksi.kembalian)}</span></div>`;
-    htmlStruk += `<hr><p style="text-align:center; margin-top:10px;">Terima Kasih Telah Berbelanja, Semoga Berkah ^_^</p>`;
+    htmlStruk += `<hr>`;
+    htmlStruk += `<p style="text-align:center; margin-top:10px;">Semoga Berkah ^_^</p>`;
     
     strukContent.innerHTML = htmlStruk;
     areaStruk.classList.remove('hidden');
@@ -371,6 +381,7 @@ export function renderTabelLaporan() {
             <td>${trx.Kasir || ''}</td>
             <td>${detailBarang}</td>
             <td>${formatRupiah(trx.Total_Belanja)}</td>
+            <td>${trx.Status || 'COMPLETED'}</td>
         `;
         tabelLaporanBody.appendChild(tr);
     });
@@ -433,17 +444,13 @@ export async function handleBatalDanUlangi() {
         alert("Tidak ada data transaksi terakhir untuk diubah.");
         return;
     }
-
     if (!confirm("Anda yakin ingin mengubah transaksi ini? Transaksi lama akan dibatalkan dan stok akan dikembalikan ke sistem.")) {
       return;
     }
-  
     const btnUbah = document.getElementById('btn-ubah-transaksi');
     btnUbah.disabled = true;
     btnUbah.textContent = 'Membatalkan...';
-  
     const result = await batalkanTransaksiApi(idTransaksiTerakhir);
-  
     if (result.status === 'sukses') {
       tampilkanNotifikasi(result.message, 'sukses');
       AppState.keranjang = dataTransaksiTerakhir.keranjang;
@@ -452,18 +459,12 @@ export async function handleBatalDanUlangi() {
       renderKeranjang();
       inputBayar.value = dataTransaksiTerakhir.jumlahBayar;
       hitungKembalian();
-      
     } else {
       tampilkanNotifikasi('Gagal: ' + result.message, 'error');
       btnUbah.disabled = false;
       btnUbah.textContent = 'Ubah Transaksi';
     }
 }
-
-
-// ====================================================================
-// === FUNGSI BARU UNTUK FITUR KIRIM WHATSAPP ===
-// ====================================================================
 
 function formatStrukUntukWhatsApp(dataTransaksi, idTransaksi) {
     let teksStruk = `*Toko ADS Gedangan*\n\n`;
