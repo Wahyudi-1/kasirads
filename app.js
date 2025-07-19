@@ -79,6 +79,11 @@ export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
 export const btnKirimWhatsApp = document.getElementById('btn-kirim-whatsapp');
 export const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
 export const btnTransaksiBaruKasir = document.getElementById('btn-transaksi-baru-kasir');
+// --- PERBAIKAN: Selektor untuk elemen scanner ---
+export const scannerContainer = document.getElementById('scanner-container');
+export const btnScanManajemen = document.getElementById('btn-scan-manajemen');
+export const btnScanKasir = document.getElementById('btn-scan-kasir');
+export const btnCloseScanner = document.getElementById('btn-close-scanner');
 
 
 // ====================================================================
@@ -275,4 +280,20 @@ btnResetFilter.addEventListener('click', () => {
     document.getElementById('filter-kasir').value = '';
     document.getElementById('filter-status').value = '';
     ui.renderTabelLaporan([]);
+});
+
+// --- PERBAIKAN: Event Listener untuk Fitur Scanner ---
+btnScanManajemen.addEventListener('click', () => {
+    // Memulai scanner dan memberitahu fungsi mana input yang harus diisi
+    ui.startScanner(inputKodeBarang);
+});
+
+btnScanKasir.addEventListener('click', () => {
+    // Memulai scanner dan memberitahu fungsi mana input yang harus diisi
+    ui.startScanner(inputCari);
+});
+
+btnCloseScanner.addEventListener('click', () => {
+    // Menghentikan scanner dan menutup overlay
+    ui.stopScanner();
 });
