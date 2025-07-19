@@ -11,7 +11,6 @@ export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcl63KsQDd4U
 
 export const API_ACTIONS = {
     LOGIN: 'loginUser', GET_BARANG: 'getSemuaBarang', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
-    // === PERBAIKAN: Menambahkan konstanta action baru ===
     BATALKAN_TRANSAKSI: 'batalkanTransaksi'
 };
 
@@ -71,9 +70,10 @@ export const loadingLaporan = document.getElementById('loading-laporan');
 export const areaStruk = document.getElementById('area-struk');
 export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
-export const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
-// === PERBAIKAN: Menambahkan seleksi untuk tombol baru ===
 export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
+// === PERBAIKAN: Menambahkan selektor baru dan menghapus yang lama ===
+export const btnTransaksiBaruKasir = document.getElementById('btn-transaksi-baru-kasir');
+
 
 // ====================================================================
 // EVENT LISTENERS UTAMA - Titik Masuk Aplikasi
@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', ui.checkLoginStatus);
 formLogin.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(formLogin);
-    formData.append('action', API_ACTIONS.LOGIN);
+    // Perbaikan: Pastikan 'action' ditambahkan sebelum memanggil fungsi login
+    formData.append('action', API_ACTIONS.LOGIN); 
     ui.handleLogin(formData);
 });
 btnLogout.addEventListener('click', ui.handleLogout);
@@ -197,17 +198,22 @@ tabelKeranjangBody.addEventListener('change', (e) => {
 
 btnCetakStruk.addEventListener('click', ui.cetakStruk);
 
-// PERBAIKAN: Event listener untuk 'Transaksi Baru' tetap ada
-btnTransaksiBaru.addEventListener('click', () => {
-    AppState.keranjang = [];
-    ui.renderKeranjang();
-    inputBayar.value = '';
-    ui.hitungKembalian();
-    menuTransaksi.classList.remove('hidden');
-    areaStruk.classList.add('hidden');
-});
-
-// === PERBAIKAN: Menambahkan event listener baru untuk tombol "Ubah Transaksi" ===
 btnUbahTransaksi.addEventListener('click', () => {
     ui.handleBatalDanUlangi();
+});
+
+// === PERBAIKAN: Menambahkan event listener untuk tombol baru di halaman kasir ===
+btnTransaksiBaruKasir.addEventListener('click', () => {
+    if (AppState.keranjang.length > 0 && confirm('Apakah Anda yakin ingin mengosongkan keranjang dan memulai transaksi baru?')) {
+        AppState.keranjang = [];
+        ui.renderKeranjang();
+        inputBayar.value = '';
+        ui.hitungKembalian();
+        inputCari.focus();
+    } else if (AppState.keranjang.length === 0) {
+        // Jika keranjang sudah kosong, tidak perlu konfirmasi
+        inputBayar.value = '';
+        ui.hitungKembalian();
+        inputCari.focus();
+    }
 });
