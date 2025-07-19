@@ -173,7 +173,8 @@ export function cariBarang() {
         hasilFilter.forEach(item => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'rekomendasi-item';
-            itemDiv.innerHTML = `<strong>${item.Nama_Barang}</strong> <br><small>Kode: ${item.Kode_Barang} | Stok: ${item.Stok_Pcs} Pcs</small>`;
+            // PERUBAHAN DI SINI: Mengubah label satuan stok dasar
+            itemDiv.innerHTML = `<strong>${item.Nama_Barang}</strong> <br><small>Kode: ${item.Kode_Barang} | Stok: ${item.Stok_Pcs} Pcs/Kg</small>`;
             itemDiv.addEventListener('click', () => pilihBarang(item));
             hasilPencarianDiv.appendChild(itemDiv);
         });
@@ -185,14 +186,18 @@ export function cariBarang() {
 export function pilihBarang(item) {
     formTambahKeranjang.classList.remove('hidden');
     itemTerpilihDataInput.value = JSON.stringify(item);
-    namaBarangTerpilihSpan.innerHTML = `${item.Nama_Barang} <small>(Stok: ${item.Stok_Pcs} Pcs)</small>`;
+    // PERUBAHAN DI SINI: Mengubah label satuan stok dasar
+    namaBarangTerpilihSpan.innerHTML = `${item.Nama_Barang} <small>(Stok: ${item.Stok_Pcs} Pcs/Kg)</small>`;
     selectSatuanKasir.innerHTML = '';
-    selectSatuanKasir.add(new Option(`Pcs - ${formatRupiah(item.Harga_Pcs)}`, 'Pcs'));
+
+    // PERUBAHAN DI SINI: Mengubah teks yang TAMPIL di dropdown.
+    // PENTING: Nilai kedua ('Pcs', 'Lusin', 'Karton') TIDAK DIUBAH.
+    selectSatuanKasir.add(new Option(`Pcs / Kg - ${formatRupiah(item.Harga_Pcs)}`, 'Pcs'));
     if (item.Harga_Lusin > 0 && item.Pcs_Per_Lusin > 0) {
-        selectSatuanKasir.add(new Option(`Lusin - ${formatRupiah(item.Harga_Lusin)}`, 'Lusin'));
+        selectSatuanKasir.add(new Option(`Paket / Lusin - ${formatRupiah(item.Harga_Lusin)}`, 'Lusin'));
     }
     if (item.Harga_Karton > 0 && item.Pcs_Per_Karton > 0) {
-        selectSatuanKasir.add(new Option(`Karton - ${formatRupiah(item.Harga_Karton)}`, 'Karton'));
+        selectSatuanKasir.add(new Option(`Karton / Sak - ${formatRupiah(item.Harga_Karton)}`, 'Karton'));
     }
     inputCari.value = '';
     hasilPencarianDiv.classList.add('hidden');
@@ -212,7 +217,8 @@ export function handleTambahKeKeranjang(e) {
     else if (satuanDiminta === 'Karton') pcsAkanDitambah = jumlahDiminta * itemData.Pcs_Per_Karton;
 
     if ((pcsDiKeranjang + pcsAkanDitambah) > itemData.Stok_Pcs) {
-        alert(`Stok tidak mencukupi!\n\nStok Awal: ${itemData.Stok_Pcs} Pcs\nSudah di Keranjang: ${pcsDiKeranjang} Pcs\nSisa Stok Tersedia: ${itemData.Stok_Pcs - pcsDiKeranjang} Pcs`);
+        const sisaStokEfektif = itemData.Stok_Pcs - pcsDiKeranjang;
+        alert(`Stok tidak mencukupi!\n\nStok Awal: ${itemData.Stok_Pcs}\nSudah di Keranjang: ${pcsDiKeranjang}\nSisa Stok Tersedia: ${sisaStokEfektif}`);
         return;
     }
 
@@ -248,10 +254,13 @@ export function renderKeranjang() {
     let total = 0;
     AppState.keranjang.forEach((item, index) => {
         const tr = document.createElement('tr');
-        let satuanOptions = `<option value="Pcs">Pcs</option>`;
+        // PERUBAHAN DI SINI: Mengubah teks yang TAMPIL di dropdown keranjang.
+        // PENTING: Nilai `value` TETAP SAMA.
+        let satuanOptions = `<option value="Pcs">Pcs / Kg</option>`;
         const dataAsli = item.dataAsli;
-        if (dataAsli.Harga_Lusin > 0 && dataAsli.Pcs_Per_Lusin > 0) satuanOptions += `<option value="Lusin">Lusin</option>`;
-        if (dataAsli.Harga_Karton > 0 && dataAsli.Pcs_Per_Karton > 0) satuanOptions += `<option value="Karton">Karton</option>`;
+        if (dataAsli.Harga_Lusin > 0 && dataAsli.Pcs_Per_Lusin > 0) satuanOptions += `<option value="Lusin">Paket / Lusin</option>`;
+        if (dataAsli.Harga_Karton > 0 && dataAsli.Pcs_Per_Karton > 0) satuanOptions += `<option value="Karton">Karton / Sak</option>`;
+        
         tr.innerHTML = `
             <td>${item.namaBarang}</td>
             <td><input type="number" class="qty-keranjang" value="${item.jumlah}" min="0.01" step="any" data-index="${index}"></td>
@@ -284,7 +293,7 @@ export function updateKuantitasKeranjang(index, jumlahBaru) {
     else if (item.satuan === 'Karton') pcsDimintaSekarang = jumlahBaru * item.dataAsli.Pcs_Per_Karton;
 
     if ((pcsLainDiKeranjang + pcsDimintaSekarang) > stokAwal) {
-        alert(`Stok tidak mencukupi!\n\nStok Awal: ${stokAwal} Pcs\nItem lain di Keranjang: ${pcsLainDiKeranjang} Pcs\nSisa Stok Tersedia: ${stokAwal - pcsLainDiKeranjang} Pcs`);
+        alert(`Stok tidak mencukupi!\n\nStok Awal: ${stokAwal}\nItem lain di Keranjang: ${pcsLainDiKeranjang}\nSisa Stok Tersedia: ${stokAwal - pcsLainDiKeranjang}`);
         renderKeranjang();
         return;
     }
@@ -341,7 +350,6 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
     dataTransaksiTerakhir = dataTransaksi;
     idTransaksiTerakhir = idTransaksi;
 
-    // Perbaikan: Susunan kata dan struktur disamakan dengan format WhatsApp
     let htmlStruk = `<h3>Toko ADS Gedangan</h3>`;
     htmlStruk += `<p style="text-align: center; margin-top: -5px; margin-bottom: 10px;">Terima kasih telah berbelanja!</p>`;
     htmlStruk += `<hr>`;
