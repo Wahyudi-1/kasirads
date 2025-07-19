@@ -3,7 +3,7 @@
 // ====================================================================
 
 import { AppState, SCRIPT_URL, API_ACTIONS } from './app.js';
-import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, checkLoginStatus } from './ui.js';
+import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, checkLoginStatus, populasiFilterKasir } from './ui.js';
 
 // --- FUNGSI-FUNGSI API ---
 
@@ -24,18 +24,12 @@ export async function handleLoginApi(dataUntukKirim) {
     }
 }
 
-/**
- * === PERBAIKAN: Fungsi ini sekarang lebih fleksibel untuk mendukung "Search-First" ===
- * Memuat data barang dari backend. Bisa dengan query pencarian atau tanpa query (memuat semua).
- * @param {string} query - Kata kunci pencarian (opsional).
- */
 export async function muatDataBarang(query = "") {
     const loadingManajemen = document.getElementById('loading-manajemen');
     const tabelBarangBody = document.getElementById('tabel-barang-body');
     loadingManajemen.classList.remove('hidden');
     tabelBarangBody.innerHTML = '';
 
-    // Menggunakan action baru 'getBarang' yang bisa menerima query
     let url = `${SCRIPT_URL}?action=getBarang`;
     if (query && query.trim() !== "") {
         url += `&query=${encodeURIComponent(query)}`;
@@ -45,13 +39,10 @@ export async function muatDataBarang(query = "") {
         const response = await fetch(url);
         const result = await response.json();
         if (result.status === 'sukses') {
-            // Jika tidak ada query (memuat semua), perbarui cache global AppState.
-            // Ini penting untuk pencarian di halaman kasir.
             if (!query) {
                 AppState.barang = result.data;
             }
-            // Selalu render data yang diterima dari server, baik itu hasil filter atau semua data.
-            renderTabelBarang(result.data);
+            renderTabelBarang(result.data); 
         } else {
             tampilkanNotifikasi('Gagal memuat data: ' + result.message, 'error');
         }
@@ -80,7 +71,6 @@ export async function handleFormSubmit(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formBarang.reset();
             keluarModeEdit();
-            // Panggil muatDataBarang tanpa query untuk refresh dan memuat semua data lagi
             muatDataBarang(); 
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
@@ -104,7 +94,6 @@ export async function hapusBarang(id, target) {
         const result = await response.json();
         if (result.status === 'sukses') {
             tampilkanNotifikasi(result.message, 'sukses');
-            // Panggil muatDataBarang tanpa query untuk refresh dan memuat semua data lagi
             muatDataBarang();
         } else {
             tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
@@ -238,8 +227,8 @@ export async function prosesTransaksi() {
         if (result.status === 'sukses') {
             document.getElementById('menu-transaksi').classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
-            AppState.barang = []; // Kosongkan cache agar stok baru dimuat
-            AppState.laporan = [];
+            AppState.barang = [];
+            AppState.laporan = []; // Kosongkan cache laporan agar data baru dimuat saat dibuka
         } else {
             tampilkanNotifikasi(result.message, 'error');
             btnProsesTransaksi.disabled = false;
@@ -252,21 +241,22 @@ export async function prosesTransaksi() {
     }
 }
 
+/**
+ * === PERBAIKAN: Fungsi ini sekarang hanya memuat data dan memanggil populasi filter ===
+ */
 export async function muatLaporan() {
-    if (AppState.laporan.length > 0) {
-        renderTabelLaporan();
-        return;
-    }
     const loadingLaporan = document.getElementById('loading-laporan');
     const tabelLaporanBody = document.getElementById('tabel-laporan-body');
     loadingLaporan.classList.remove('hidden');
-    tabelLaporanBody.innerHTML = '';
+    tabelLaporanBody.innerHTML = ''; 
+
     try {
         const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`);
         const result = await response.json();
         if (result.status === 'sukses') {
             AppState.laporan = result.data;
-            renderTabelLaporan();
+            // Panggil fungsi UI untuk mengisi dropdown, bukan untuk merender tabel
+            populasiFilterKasir(); 
         } else {
             tampilkanNotifikasi('Gagal memuat laporan: ' + result.message, 'error');
         }
