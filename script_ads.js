@@ -5,6 +5,29 @@
 // PASTIKAN URL WEB APP ANDA SUDAH BENAR DI SINI
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG0jpT2mj2-iu12OfgMjrngyWTARrrzM52TL3IUyKoXig01TE5FW2h5h_-Uy8ROxZd/exec"; 
 
+// === TAMBAHKAN OBJEK INI ===
+const API_ACTIONS = {
+    // Aksi untuk Login & Sesi
+    LOGIN: 'loginUser',
+
+    // Aksi untuk Manajemen Barang
+    GET_BARANG: 'getSemuaBarang',
+    TAMBAH_BARANG: 'tambahBarang',
+    UBAH_BARANG: 'ubahBarang',
+    HAPUS_BARANG: 'hapusBarang',
+
+    // Aksi untuk Manajemen Pengguna
+    GET_PENGGUNA: 'getSemuaPengguna',
+    TAMBAH_PENGGUNA: 'tambahPengguna',
+    UBAH_PENGGUNA: 'ubahPengguna',
+    HAPUS_PENGGUNA: 'hapusPengguna',
+
+    // Aksi untuk Transaksi & Laporan
+    PROSES_TRANSAKSI: 'prosesTransaksi',
+    GET_LAPORAN: 'getRiwayatTransaksi'
+};
+// === BATAS PENAMBAHAN ===
+
 // --- ELEMEN-ELEMEN HTML ---
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
@@ -99,7 +122,7 @@ async function handleLogin(e) {
     const passwordAsli = formData.get('password');
     // Hashing dilakukan di sisi backend untuk keamanan terbaik
     const dataUntukKirim = new FormData();
-    dataUntukKirim.append('action', 'loginUser');
+    dataUntukKirim.append('action', API_ACTIONS.LOGIN);
     dataUntukKirim.append('username', username);
     dataUntukKirim.append('password', passwordAsli); // Kirim password asli, biarkan backend yg hash
     
@@ -166,7 +189,7 @@ async function muatDataBarang() {
     loadingManajemen.classList.remove('hidden');
     tabelBarangBody.innerHTML = '';
     try {
-        const response = await fetch(`${SCRIPT_URL}?action=getSemuaBarang`);
+        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_BARANG}`);
         const result = await response.json();
         if (result.status === 'sukses') {
             semuaDataBarang = result.data;
@@ -205,7 +228,7 @@ function renderTabelBarang() {
 async function handleFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(formBarang);
-    const action = modeEdit ? 'ubahBarang' : 'tambahBarang';
+    const action = modeEdit ? API_ACTIONS.UBAH_BARANG : API_ACTIONS.TAMBAH_BARANG;
     formData.append('action', action);
 
     const button = modeEdit ? btnSimpan : btnTambah;
@@ -271,7 +294,7 @@ async function muatDataPengguna() {
     loadingPengguna.classList.remove('hidden');
     tabelPenggunaBody.innerHTML = '';
     try {
-        const response = await fetch(`${SCRIPT_URL}?action=getSemuaPengguna`);
+        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`);
         const result = await response.json();
         if (result.status === 'sukses') {
             semuaDataPengguna = result.data;
@@ -309,7 +332,7 @@ function renderTabelPengguna() {
 async function handleFormSubmitPengguna(e) {
     e.preventDefault();
     const formData = new FormData(formPengguna);
-    const action = modeEditPengguna ? 'ubahPengguna' : 'tambahPengguna';
+    const action = modeEditPengguna ? API_ACTIONS.UBAH_PENGGUNA : API_ACTIONS.TAMBAH_PENGGUNA;
     
     // PERBAIKAN: Membaca nilai dari input dengan name="Password_Baru"
     const passwordValue = formData.get('Password_Baru');
@@ -633,7 +656,7 @@ async function prosesTransaksi() {
     btnProsesTransaksi.disabled = true;
     btnProsesTransaksi.textContent = 'Memproses...';
     try {
-        const response = await fetch(`${SCRIPT_URL}?action=prosesTransaksi`, {
+        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.PROSES_TRANSAKSI}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8'
@@ -686,7 +709,7 @@ async function muatLaporan() {
     loadingLaporan.classList.remove('hidden');
     tabelLaporanBody.innerHTML = '';
     try {
-        const response = await fetch(`${SCRIPT_URL}?action=getRiwayatTransaksi`);
+        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`);
         const result = await response.json();
         if (result.status === 'sukses') {
             semuaDataLaporan = result.data;
@@ -775,7 +798,7 @@ tabelBarangBody.addEventListener('click', async (e) => {
         if (confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
             const id = target.dataset.id;
             const formData = new FormData();
-            formData.append('action', 'hapusBarang');
+            formData.append('action', API_ACTIONS.HAPUS_BARANG);
             formData.append('ID_Barang', id);
             target.disabled = true;
             target.textContent = '...';
@@ -811,7 +834,7 @@ tabelPenggunaBody.addEventListener('click', async (e) => {
         if (confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
             const id = target.dataset.id;
             const formData = new FormData();
-            formData.append('action', 'hapusPengguna');
+            formData.append('action', API_ACTIONS.HAPUS_PENGGUNA);
             formData.append('ID_Pengguna', id);
             try {
                 const response = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
