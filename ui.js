@@ -360,7 +360,7 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
     htmlStruk += `<div class="struk-item"><span>Bayar</span><span>${formatRupiah(dataTransaksi.jumlahBayar)}</span></div>`;
     htmlStruk += `<div class="struk-item"><span>Kembali</span><span>${formatRupiah(dataTransaksi.kembalian)}</span></div>`;
     htmlStruk += `<hr>`;
-    htmlStruk += `<p style="text-align:center; margin-top:10px;">Semoga Berkah ^_^</p>`;
+    htmlStruk += `<p style="text-align:center; margin-top:10px;">Semoga Berkah dan Sehat Selalu</p>`;
     
     strukContent.innerHTML = htmlStruk;
     areaStruk.classList.remove('hidden');
