@@ -38,15 +38,22 @@ export function checkLoginStatus() {
     }
 }
 
+// di dalam file ui.js
 export async function handleLogin(e) {
     e.preventDefault();
     const formData = new FormData(formLogin);
+    
+    // ==========================================================
+    // === TAMBAHKAN BARIS PERBAIKAN INI ===
+    formData.append('action', API_ACTIONS.LOGIN); 
+    // ==========================================================
+
     const button = formLogin.querySelector('button');
     button.disabled = true;
     button.textContent = 'Memproses...';
     loginStatus.textContent = '';
     
-    const result = await handleLoginApi(formData);
+    const result = await handleLoginApi(formData); // Sekarang formData sudah benar
 
     if (!result.success) {
         loginStatus.textContent = result.message;
