@@ -98,7 +98,7 @@ btnLogout.addEventListener('click', ui.handleLogout);
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
-    // Kosongkan tabel dan pencarian saat tab dibuka
+    // Kosongkan tabel dan pencarian saat tab dibuka untuk state yang bersih
     ui.renderTabelBarang([]);
     inputCariManajemen.value = '';
 });
@@ -106,13 +106,13 @@ navManajemen.addEventListener('click', () => {
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    // Data sudah ada di AppState, tidak perlu fetch lagi.
+    // Tidak perlu aksi, data sudah ada di AppState.
 });
 
 navLaporan.addEventListener('click', () => {
     ui.setActiveNav(navLaporan);
     ui.showMenu(menuLaporan);
-    // Panggil fungsi yang hanya merender dari data yang sudah ada di cache.
+    // Panggil fungsi yang hanya menyiapkan UI dari data yang sudah ada di cache.
     api.muatLaporan(); 
 });
 
@@ -126,7 +126,6 @@ navPengguna.addEventListener('click', () => {
 // --- Event Listener untuk Kontrol Pencarian di Halaman Manajemen ---
 btnCariManajemen.addEventListener('click', () => {
     const query = inputCariManajemen.value;
-    // Panggil fungsi muatDataBarang versi baru yang hanya filter dari cache
     api.muatDataBarang(query);
 });
 
@@ -138,9 +137,9 @@ inputCariManajemen.addEventListener('keypress', (e) => {
 });
 
 btnTampilkanSemua.addEventListener('click', () => {
+    // Tidak perlu konfirmasi karena proses filter terjadi di client dan sangat cepat
     inputCariManajemen.value = '';
-    // Panggil muatDataBarang tanpa query untuk menampilkan semua data dari cache
-    api.muatDataBarang(); 
+    api.muatDataBarang(); // Memanggil tanpa query akan menampilkan semua data dari cache
 });
 
 // --- Event Listener CRUD Barang & Pengguna ---
