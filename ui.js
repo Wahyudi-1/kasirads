@@ -5,9 +5,11 @@
 import { AppState, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
 import { handleLoginApi, batalkanTransaksiApi } from './api.js';
 
-// --- Variabel untuk menyimpan state transaksi terakhir ---
+// --- Variabel State Lokal untuk UI ---
 export let dataTransaksiTerakhir = null;
 export let idTransaksiTerakhir = null;
+// Variabel untuk menyimpan data yang sedang ditampilkan di tabel manajemen
+let dataBarangTerakhirRender = [];
 
 
 // --- FUNGSI-FUNGSI UI ---
@@ -23,21 +25,10 @@ const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
 };
 
-/**
- * Menerjemahkan nilai satuan logis menjadi teks tampilan yang lebih deskriptif.
- * @param {string} satuan - Nilai satuan ('Pcs', 'Lusin', 'Karton').
- * @returns {string} - Teks tampilan yang sesuai.
- */
 function terjemahkanSatuan(satuan) {
-    if (satuan === 'Pcs') {
-        return 'Pcs / Kg';
-    }
-    if (satuan === 'Lusin') {
-        return 'Paket / Lusin';
-    }
-    if (satuan === 'Karton') {
-        return 'Karton / Sak';
-    }
+    if (satuan === 'Pcs') return 'Pcs / Kg';
+    if (satuan === 'Lusin') return 'Paket / Lusin';
+    if (satuan === 'Karton') return 'Karton / Sak';
     return satuan;
 }
 
@@ -88,9 +79,15 @@ export function handleLogout() {
     }
 }
 
-export function renderTabelBarang() {
+/**
+ * Merender tabel barang berdasarkan data yang diberikan.
+ * @param {Array} data - Array objek barang yang akan ditampilkan.
+ */
+export function renderTabelBarang(data) {
+    // Simpan data yang dirender untuk digunakan oleh tombol 'Ubah'
+    dataBarangTerakhirRender = data;
     tabelBarangBody.innerHTML = '';
-    AppState.barang.forEach(item => {
+    data.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.Kode_Barang}</td>
@@ -105,6 +102,15 @@ export function renderTabelBarang() {
         `;
         tabelBarangBody.appendChild(tr);
     });
+}
+
+/**
+ * Mendapatkan detail barang dari data yang sedang ditampilkan di tabel manajemen.
+ * @param {string} id - ID Barang yang dicari.
+ * @returns {object|undefined} - Objek barang jika ditemukan.
+ */
+export function getDataFromLastRender(id) {
+    return dataBarangTerakhirRender.find(item => item.ID_Barang === id);
 }
 
 export function masukModeEdit(dataBarang) {
