@@ -71,7 +71,8 @@ export const areaStruk = document.getElementById('area-struk');
 export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
 export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
-// === PERBAIKAN: Menambahkan selektor baru dan menghapus yang lama ===
+// === PERBAIKAN: Menambahkan selektor untuk tombol WhatsApp ===
+export const btnKirimWhatsApp = document.getElementById('btn-kirim-whatsapp');
 export const btnTransaksiBaruKasir = document.getElementById('btn-transaksi-baru-kasir');
 
 
@@ -83,7 +84,6 @@ document.addEventListener('DOMContentLoaded', ui.checkLoginStatus);
 formLogin.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(formLogin);
-    // Perbaikan: Pastikan 'action' ditambahkan sebelum memanggil fungsi login
     formData.append('action', API_ACTIONS.LOGIN); 
     ui.handleLogin(formData);
 });
@@ -202,7 +202,11 @@ btnUbahTransaksi.addEventListener('click', () => {
     ui.handleBatalDanUlangi();
 });
 
-// === PERBAIKAN: Menambahkan event listener untuk tombol baru di halaman kasir ===
+// === PERBAIKAN: Menambahkan event listener untuk tombol WhatsApp ===
+btnKirimWhatsApp.addEventListener('click', () => {
+    ui.handleKirimWhatsApp();
+});
+
 btnTransaksiBaruKasir.addEventListener('click', () => {
     if (AppState.keranjang.length > 0 && confirm('Apakah Anda yakin ingin mengosongkan keranjang dan memulai transaksi baru?')) {
         AppState.keranjang = [];
@@ -211,7 +215,6 @@ btnTransaksiBaruKasir.addEventListener('click', () => {
         ui.hitungKembalian();
         inputCari.focus();
     } else if (AppState.keranjang.length === 0) {
-        // Jika keranjang sudah kosong, tidak perlu konfirmasi
         inputBayar.value = '';
         ui.hitungKembalian();
         inputCari.focus();
