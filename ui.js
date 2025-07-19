@@ -71,7 +71,15 @@ export async function handleLogin(formData) {
         
         await muatSemuaDataAwal();
         
-        await checkLoginStatus(); 
+        // Setelah data dimuat, baru selesaikan proses setup UI
+        const userData = AppState.currentUser;
+        infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
+        if (userData.Role === 'admin') {
+            navPengguna.classList.remove('hidden');
+        } else {
+            navPengguna.classList.add('hidden');
+        }
+        navManajemen.click();
     } else {
         loginStatus.textContent = result.message;
         button.disabled = false;
@@ -377,7 +385,9 @@ export function tampilkanStruk(dataTransaksi, idTransaksi) {
     areaStruk.classList.remove('hidden');
 }
 
-export function cetakStruk() { window.print(); }
+export function cetakStruk() {
+    window.print();
+}
 
 export function setActiveNav(button) {
     [navManajemen, navTransaksi, navLaporan, navPengguna].forEach(btn => btn.classList.remove('active'));
@@ -445,6 +455,8 @@ export async function handleBatalDanUlangi() {
     const result = await batalkanTransaksiApi(idTransaksiTerakhir);
     if (result.status === 'sukses') {
       tampilkanNotifikasi(result.message, 'sukses');
+      // Muat ulang semua data agar cache sinkron, terutama stok
+      await muatSemuaDataAwal();
       AppState.keranjang = dataTransaksiTerakhir.keranjang;
       areaStruk.classList.add('hidden');
       menuTransaksi.classList.remove('hidden');
@@ -510,6 +522,13 @@ export function handleKirimWhatsApp() {
     const pesanStruk = formatStrukUntukWhatsApp(dataTransaksiTerakhir, idTransaksiTerakhir);
     const urlWhatsApp = `https://api.whatsapp.com/send?phone=${nomorTerformat}&text=${pesanStruk}`;
     window.open(urlWhatsApp, '_blank');
+}
+
+function parseTanggalLaporan(tanggalString) {
+    if (!tanggalString || typeof tanggalString !== 'string') return null;
+    const parts = tanggalString.split(/[\/, :.]+/);
+    if (parts.length < 5) return null;
+    return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
 }
 
 export function populasiFilterKasir() {
