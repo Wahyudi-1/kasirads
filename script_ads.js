@@ -3,7 +3,7 @@
 // ====================================================================
 
 // PASTIKAN URL WEB APP ANDA SUDAH BENAR DI SINI
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG0jpT2mj2-iu12OfgMjrngyWTARrrzM52TL3IUyKoXig01TE5FW2h5h_-Uy8ROxZd/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvcHzScV7RCgXwGPgPKOxlj1jhACqtVoJbZFOzeC5q6KJ8uckoJIuysmmgsLrAKw9L/exec";
 
 // === KAMUS UNTUK SEMUA AKSI API ===
 const API_ACTIONS = {
