@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Data Barang & Kasir Toko ADS</title>
     <link rel="stylesheet" href="style_ads.css">
-    <!-- PERBAIKAN: Library crypto-js yang tidak digunakan telah dihapus -->
-     <!-- =============================================== -->
-    <!-- === TAMBAHKAN BARIS DI BAWAH INI UNTUK FAVICON === -->
-    <!-- =============================================== -->
-    <link rel="icon" type="image/png" href="Logo.png"> 
-    <!-- Pastikan 'href' sesuai dengan nama file ikon Anda -->
+    <link rel="icon" type="image/png" href="Logo.png">
 </head>
 <body>
 
@@ -54,15 +49,15 @@
             <div id="notifikasi" class="hidden"></div>
             <div id="area-struk" class="hidden">
                 <div id="struk-content"></div>
-               <div class="struk-actions">
+                <div class="struk-actions">
                     <button id="btn-cetak-struk">Cetak Struk</button>
-                    <!-- Ganti tombol ini -->
                     <button id="btn-ubah-transaksi" style="background-color: #f39c12;">Ubah Transaksi</button>
+                    <!-- PERBAIKAN: Tombol Transaksi Baru yang lama dihapus dari sini -->
                 </div>
             </div>
 
-            <!-- TAMPILAN 1: MANAJEMEN BARANG (KODE SUDAH DIPERBAIKI) -->
-            <section id="menu-manajemen-barang">
+            <!-- TAMPILAN 1: MANAJEMEN BARANG -->
+            <section id="menu-manajemen-barang" class="hidden">
                 <h2>Manajemen Barang</h2>
                 <div class="form-container">
                     <form id="form-barang">
@@ -72,10 +67,6 @@
                             <div class="form-group"><label for="Nama_Barang">Nama Barang</label><input type="text" id="Nama_Barang" name="Nama_Barang" required></div>
                             <div class="form-group"><label for="Kategori_Barang">Kategori</label><input type="text" id="Kategori_Barang" name="Kategori_Barang"></div>
                         </div>
-                        
-                        <!-- ========================================================== -->
-                        <!-- === PERBAIKAN: Atribut 'name' dan 'id' diubah di sini === -->
-                        <!-- ========================================================== -->
                         <div class="form-row">
                             <div class="form-group"><label for="Stok_Pcs">Stok (Pcs atau Kg)</label><input type="number" id="Stok_Pcs" name="Stok_Pcs" min="0" value="0" step="any" required></div>
                             <div class="form-group"><label for="Pcs_Per_Lusin">Barang per Paket (Lusin, Pak)</label><input type="number" id="Pcs_Per_Lusin" name="Pcs_Per_Lusin" min="0" value="0" step="any"></div>
@@ -86,7 +77,6 @@
                             <div class="form-group"><label for="Harga_Lusin">Harga Paket</label><input type="number" id="Harga_Lusin" name="Harga_Lusin" min="0" value="0" step="any"></div>
                             <div class="form-group"><label for="Harga_Karton">Harga Karton/Sak</label><input type="number" id="Harga_Karton" name="Harga_Karton" min="0" value="0" step="any"></div>
                         </div>
-                        
                         <div class="form-actions">
                             <button type="submit" id="btn-tambah">Tambah Barang</button>
                             <button type="submit" id="btn-simpan" class="hidden">Simpan Perubahan</button>
@@ -95,7 +85,7 @@
                     </form>
                 </div>
                 <div class="tabel-container">
-                    <div id="loading-manajemen" class="loading"></div>
+                    <div id="loading-manajemen" class="loading hidden"></div>
                     <table>
                         <thead>
                             <tr>
@@ -117,7 +107,11 @@
                 <h2>Kasir Transaksi</h2>
                 <div class="kasir-grid">
                     <div class="kasir-kiri">
-                        <h3>Keranjang Belanja</h3>
+                        <!-- === PERBAIKAN: Menambahkan div pembungkus dan tombol baru === -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3>Keranjang Belanja</h3>
+                            <button id="btn-transaksi-baru-kasir" style="background-color: #95a5a6;">Transaksi Baru</button>
+                        </div>
                         <div class="tabel-container">
                             <table>
                                 <thead>
@@ -170,7 +164,7 @@
             <section id="menu-laporan" class="hidden">
                 <h2>Laporan Penjualan</h2>
                 <div class="tabel-container">
-                    <div id="loading-laporan" class="loading"></div>
+                    <div id="loading-laporan" class="loading hidden"></div>
                     <table>
                         <thead>
                             <tr>
@@ -179,6 +173,7 @@
                                 <th>Kasir</th>
                                 <th>Detail Barang</th>
                                 <th>Total Belanja</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="tabel-laporan-body"></tbody>
@@ -224,7 +219,7 @@
                     </form>
                 </div>
                 <div class="tabel-container">
-                    <div id="loading-pengguna" class="loading"></div>
+                    <div id="loading-pengguna" class="loading hidden"></div>
                     <table>
                         <thead>
                             <tr>
