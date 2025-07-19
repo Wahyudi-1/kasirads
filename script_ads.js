@@ -83,13 +83,18 @@ const btnCetakStruk = document.getElementById('btn-cetak-struk');
 const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
 
 // --- STATE APLIKASI & CACHE ---
-let keranjang = [];
-let modeEdit = false;
-let modeEditPengguna = false;
-let timeoutCari;
-let semuaDataBarang = [];
-let semuaDataPengguna = [];
-let semuaDataLaporan = [];
+const AppState = {
+    keranjang: [],
+    barang: [],      // Sebelumnya 'semuaDataBarang'
+    pengguna: [],    // Sebelumnya 'semuaDataPengguna'
+    laporan: [],     // Sebelumnya 'semuaDataLaporan'
+    modeEdit: {
+        barang: false,   // Sebelumnya 'modeEdit'
+        pengguna: false  // Sebelumnya 'modeEditPengguna'
+    },
+    currentUser: null, // Untuk menyimpan data user yg login
+    timeoutCari: null  // Sebelumnya 'timeoutCari'
+};
 
 
 // ====================================================================
