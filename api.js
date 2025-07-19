@@ -25,7 +25,7 @@ export async function handleLoginApi(dataUntukKirim) {
 }
 
 /**
- * === PERBAIKAN: Fungsi ini sekarang lebih fleksibel ===
+ * === PERBAIKAN: Fungsi ini sekarang lebih fleksibel untuk mendukung "Search-First" ===
  * Memuat data barang dari backend. Bisa dengan query pencarian atau tanpa query (memuat semua).
  * @param {string} query - Kata kunci pencarian (opsional).
  */
@@ -45,12 +45,13 @@ export async function muatDataBarang(query = "") {
         const response = await fetch(url);
         const result = await response.json();
         if (result.status === 'sukses') {
-            // Jika tidak ada query, simpan semua data ke cache global untuk kasir
+            // Jika tidak ada query (memuat semua), perbarui cache global AppState.
+            // Ini penting untuk pencarian di halaman kasir.
             if (!query) {
                 AppState.barang = result.data;
             }
-            // Render data yang diterima (bisa semua atau hasil filter)
-            renderTabelBarang(result.data); 
+            // Selalu render data yang diterima dari server, baik itu hasil filter atau semua data.
+            renderTabelBarang(result.data);
         } else {
             tampilkanNotifikasi('Gagal memuat data: ' + result.message, 'error');
         }
@@ -60,7 +61,6 @@ export async function muatDataBarang(query = "") {
         loadingManajemen.classList.add('hidden');
     }
 }
-
 
 export async function handleFormSubmit(e) {
     e.preventDefault();
