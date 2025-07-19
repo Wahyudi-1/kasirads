@@ -384,23 +384,6 @@ export function cetakStruk() {
     window.print();
 }
 
-export function renderTabelLaporan() {
-    tabelLaporanBody.innerHTML = '';
-    AppState.laporan.forEach(trx => {
-        const detailBarang = JSON.parse(trx.Detail_Barang_JSON).map(item => `${item.namaBarang} (${item.jumlah} ${item.satuan})`).join('<br>');
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${trx.ID_Transaksi}</td>
-            <td>${trx.Timestamp_Transaksi}</td>
-            <td>${trx.Kasir || ''}</td>
-            <td>${detailBarang}</td>
-            <td>${formatRupiah(trx.Total_Belanja)}</td>
-            <td>${trx.Status || 'COMPLETED'}</td>
-        `;
-        tabelLaporanBody.appendChild(tr);
-    });
-}
-
 export function setActiveNav(button) {
     [navManajemen, navTransaksi, navLaporan, navPengguna].forEach(btn => btn.classList.remove('active'));
     button.classList.add('active');
@@ -412,9 +395,6 @@ export function showMenu(menuToShow) {
     menuToShow.classList.remove('hidden');
 }
 
-/**
- * === PERBAIKAN: Fungsi ini sekarang memanggil API untuk mendapatkan rekomendasi ===
- */
 export async function rekomendasiKodeBarang(query) {
     const q = query.toLowerCase();
     if (q.length < 1 || AppState.modeEdit.barang) {
@@ -430,7 +410,6 @@ export async function rekomendasiKodeBarang(query) {
         rekomendasiKodeDiv.innerHTML = '';
         if (result.status === 'sukses' && result.data.length > 0) {
             rekomendasiKodeDiv.classList.remove('hidden');
-            // Hanya tampilkan 5 hasil teratas untuk rekomendasi
             result.data.slice(0, 5).forEach(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'rekomendasi-item';
@@ -542,4 +521,74 @@ export function handleKirimWhatsApp() {
     const pesanStruk = formatStrukUntukWhatsApp(dataTransaksiTerakhir, idTransaksiTerakhir);
     const urlWhatsApp = `https://api.whatsapp.com/send?phone=${nomorTerformat}&text=${pesanStruk}`;
     window.open(urlWhatsApp, '_blank');
+}
+
+// ====================================================================
+// === FUNGSI BARU UNTUK FILTER LAPORAN ===
+// ====================================================================
+
+function parseTanggalLaporan(tanggalString) {
+    if (!tanggalString || typeof tanggalString !== 'string') return null;
+    const parts = tanggalString.split(/[\/, :]+/); // Memecah berdasarkan '/', ',', ':', dan spasi
+    if (parts.length < 5) return null;
+    // Format: hari, bulan, tahun, jam, menit
+    // JS Date: tahun, bulan (0-11), hari, jam, menit
+    return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
+}
+
+export function populasiFilterKasir() {
+    const filterKasir = document.getElementById('filter-kasir');
+    const namaKasir = [...new Set(AppState.laporan.map(trx => trx.Kasir).filter(Boolean))];
+    
+    while (filterKasir.options.length > 1) {
+        filterKasir.remove(1);
+    }
+
+    namaKasir.sort().forEach(nama => {
+        filterKasir.add(new Option(nama, nama));
+    });
+}
+
+export function terapkanFilterLaporan() {
+    const tanggalMulaiValue = document.getElementById('filter-tanggal-mulai').value;
+    const tanggalSelesaiValue = document.getElementById('filter-tanggal-selesai').value;
+    const kasirValue = document.getElementById('filter-kasir').value;
+    const statusValue = document.getElementById('filter-status').value;
+
+    const tanggalMulai = tanggalMulaiValue ? new Date(tanggalMulaiValue) : null;
+    if (tanggalMulai) tanggalMulai.setHours(0, 0, 0, 0);
+
+    const tanggalSelesai = tanggalSelesaiValue ? new Date(tanggalSelesaiValue) : null;
+    if (tanggalSelesai) tanggalSelesai.setHours(23, 59, 59, 999);
+
+    const dataTersaring = AppState.laporan.filter(trx => {
+        const tanggalTrx = parseTanggalLaporan(trx.Timestamp_Transaksi);
+        if (!tanggalTrx) return true; // Jika tanggal tidak bisa diparsing, jangan filter
+
+        if (tanggalMulai && tanggalTrx < tanggalMulai) return false;
+        if (tanggalSelesai && tanggalTrx > tanggalSelesai) return false;
+        if (kasirValue && trx.Kasir !== kasirValue) return false;
+        if (statusValue && (trx.Status || 'COMPLETED') !== statusValue) return false;
+
+        return true;
+    });
+
+    renderTabelLaporan(dataTersaring);
+}
+
+export function renderTabelLaporan(data) {
+    tabelLaporanBody.innerHTML = '';
+    data.forEach(trx => {
+        const detailBarang = JSON.parse(trx.Detail_Barang_JSON).map(item => `${item.namaBarang} (${item.jumlah} ${terjemahkanSatuan(item.satuan)})`).join('<br>');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${trx.ID_Transaksi}</td>
+            <td>${trx.Timestamp_Transaksi}</td>
+            <td>${trx.Kasir || ''}</td>
+            <td>${detailBarang}</td>
+            <td>${formatRupiah(trx.Total_Belanja)}</td>
+            <td>${trx.Status || 'COMPLETED'}</td>
+        `;
+        tabelLaporanBody.appendChild(tr);
+    });
 }
