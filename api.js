@@ -3,9 +3,44 @@
 // ====================================================================
 
 import { AppState, SCRIPT_URL, API_ACTIONS } from './app.js';
-import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, checkLoginStatus, populasiFilterKasir } from './ui.js';
+import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, populasiFilterKasir } from './ui.js';
 
 // --- FUNGSI-FUNGSI API ---
+
+/**
+ * === FUNGSI BARU (Eager Loading) ===
+ * Memuat semua data penting (barang, laporan, pengguna) secara bersamaan setelah login.
+ */
+export async function muatSemuaDataAwal() {
+    console.log("Memulai pemuatan semua data awal...");
+    try {
+        // Jalankan semua permintaan data secara paralel untuk efisiensi
+        const [hasilBarang, hasilLaporan, hasilPengguna] = await Promise.all([
+            fetch(`${SCRIPT_URL}?action=getBarang`),
+            fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`),
+            fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`)
+        ]);
+
+        // Proses semua respons menjadi JSON
+        const barang = await hasilBarang.json();
+        const laporan = await hasilLaporan.json();
+        const pengguna = await hasilPengguna.json();
+
+        // Simpan semua data ke cache AppState
+        if (barang.status === 'sukses') AppState.barang = barang.data;
+        if (laporan.status === 'sukses') AppState.laporan = laporan.data;
+        if (pengguna.status === 'sukses') AppState.pengguna = pengguna.data;
+        
+        console.log("Semua data awal berhasil dimuat.");
+        return { success: true };
+
+    } catch (error) {
+        console.error("Gagal memuat semua data awal:", error);
+        tampilkanNotifikasi('Gagal memuat data aplikasi. Coba muat ulang halaman.', 'error');
+        return { success: false };
+    }
+}
+
 
 export async function handleLoginApi(dataUntukKirim) {
     try {
@@ -14,7 +49,7 @@ export async function handleLoginApi(dataUntukKirim) {
         if (result.status === 'sukses') {
             sessionStorage.setItem('user', JSON.stringify(result.user));
             AppState.currentUser = result.user;
-            checkLoginStatus();
+            // checkLoginStatus dipindahkan ke ui.js agar berjalan setelah data dimuat
             return { success: true };
         } else {
             return { success: false, message: result.message };
@@ -24,33 +59,22 @@ export async function handleLoginApi(dataUntukKirim) {
     }
 }
 
-export async function muatDataBarang(query = "") {
-    const loadingManajemen = document.getElementById('loading-manajemen');
-    const tabelBarangBody = document.getElementById('tabel-barang-body');
-    loadingManajemen.classList.remove('hidden');
-    tabelBarangBody.innerHTML = '';
+/**
+ * === PERBAIKAN: Fungsi ini sekarang hanya memfilter dan merender data dari cache ===
+ * @param {string} query - Kata kunci pencarian (opsional).
+ */
+export function muatDataBarang(query = "") {
+    let dataToRender = AppState.barang;
 
-    let url = `${SCRIPT_URL}?action=getBarang`;
     if (query && query.trim() !== "") {
-        url += `&query=${encodeURIComponent(query)}`;
+        const lowerCaseQuery = query.toLowerCase();
+        dataToRender = AppState.barang.filter(item => {
+            const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
+            const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
+            return kode.includes(lowerCaseQuery) || nama.includes(lowerCaseQuery);
+        });
     }
-
-    try {
-        const response = await fetch(url);
-        const result = await response.json();
-        if (result.status === 'sukses') {
-            if (!query) {
-                AppState.barang = result.data;
-            }
-            renderTabelBarang(result.data); 
-        } else {
-            tampilkanNotifikasi('Gagal memuat data: ' + result.message, 'error');
-        }
-    } catch (error) {
-        tampilkanNotifikasi('Terjadi kesalahan jaringan.', 'error');
-    } finally {
-        loadingManajemen.classList.add('hidden');
-    }
+    renderTabelBarang(dataToRender);
 }
 
 export async function handleFormSubmit(e) {
@@ -71,7 +95,10 @@ export async function handleFormSubmit(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formBarang.reset();
             keluarModeEdit();
-            muatDataBarang(); 
+            // Muat ulang semua data agar cache sinkron
+            await muatSemuaDataAwal();
+            // Render ulang tabel dengan data lengkap yang baru
+            renderTabelBarang(AppState.barang);
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
         }
@@ -94,7 +121,10 @@ export async function hapusBarang(id, target) {
         const result = await response.json();
         if (result.status === 'sukses') {
             tampilkanNotifikasi(result.message, 'sukses');
-            muatDataBarang();
+            // Muat ulang semua data agar cache sinkron
+            await muatSemuaDataAwal();
+            // Render ulang tabel dengan data lengkap yang baru
+            renderTabelBarang(AppState.barang);
         } else {
             tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
             target.disabled = false;
@@ -105,29 +135,11 @@ export async function hapusBarang(id, target) {
     }
 }
 
-export async function muatDataPengguna() {
-    if (AppState.pengguna.length > 0) {
-        renderTabelPengguna();
-        return;
-    }
-    const loadingPengguna = document.getElementById('loading-pengguna');
-    const tabelPenggunaBody = document.getElementById('tabel-pengguna-body');
-    loadingPengguna.classList.remove('hidden');
-    tabelPenggunaBody.innerHTML = '';
-    try {
-        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`);
-        const result = await response.json();
-        if (result.status === 'sukses') {
-            AppState.pengguna = result.data;
-            renderTabelPengguna();
-        } else {
-            tampilkanNotifikasi('Gagal memuat data pengguna: ' + result.message, 'error');
-        }
-    } catch (error) {
-        tampilkanNotifikasi('Terjadi kesalahan jaringan.', 'error');
-    } finally {
-        loadingPengguna.classList.add('hidden');
-    }
+/**
+ * === PERBAIKAN: Fungsi ini sekarang hanya merender data dari cache ===
+ */
+export function muatDataPengguna() {
+    renderTabelPengguna();
 }
 
 export async function handleFormSubmitPengguna(e) {
@@ -163,8 +175,9 @@ export async function handleFormSubmitPengguna(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formPengguna.reset();
             keluarModeEditPengguna();
-            AppState.pengguna = [];
-            muatDataPengguna();
+            // Muat ulang semua data agar cache sinkron
+            await muatSemuaDataAwal();
+            renderTabelPengguna();
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
         }
@@ -187,8 +200,9 @@ export async function hapusPengguna(id, target) {
         const result = await response.json();
         if (result.status === 'sukses') {
             tampilkanNotifikasi(result.message, 'sukses');
-            AppState.pengguna = [];
-            muatDataPengguna();
+            // Muat ulang semua data agar cache sinkron
+            await muatSemuaDataAwal();
+            renderTabelPengguna();
         } else {
             tampilkanNotifikasi('Gagal menghapus: ' + result.message, 'error');
             target.disabled = false;
@@ -227,8 +241,9 @@ export async function prosesTransaksi() {
         if (result.status === 'sukses') {
             document.getElementById('menu-transaksi').classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
+            // Kosongkan cache agar data baru dimuat saat login berikutnya
             AppState.barang = [];
-            AppState.laporan = []; // Kosongkan cache laporan agar data baru dimuat saat dibuka
+            AppState.laporan = [];
         } else {
             tampilkanNotifikasi(result.message, 'error');
             btnProsesTransaksi.disabled = false;
@@ -242,29 +257,12 @@ export async function prosesTransaksi() {
 }
 
 /**
- * === PERBAIKAN: Fungsi ini sekarang hanya memuat data dan memanggil populasi filter ===
+ * === PERBAIKAN: Fungsi ini sekarang hanya mempersiapkan UI, tidak fetch data ===
  */
-export async function muatLaporan() {
-    const loadingLaporan = document.getElementById('loading-laporan');
-    const tabelLaporanBody = document.getElementById('tabel-laporan-body');
-    loadingLaporan.classList.remove('hidden');
-    tabelLaporanBody.innerHTML = ''; 
-
-    try {
-        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`);
-        const result = await response.json();
-        if (result.status === 'sukses') {
-            AppState.laporan = result.data;
-            // Panggil fungsi UI untuk mengisi dropdown, bukan untuk merender tabel
-            populasiFilterKasir(); 
-        } else {
-            tampilkanNotifikasi('Gagal memuat laporan: ' + result.message, 'error');
-        }
-    } catch (error) {
-        tampilkanNotifikasi('Terjadi kesalahan jaringan.', 'error');
-    } finally {
-        loadingLaporan.classList.add('hidden');
-    }
+export function muatLaporan() {
+    populasiFilterKasir();
+    // Tabel sengaja dibiarkan kosong sampai filter diterapkan oleh pengguna
+    renderTabelLaporan([]);
 }
 
 export async function batalkanTransaksiApi(idTransaksi) {
