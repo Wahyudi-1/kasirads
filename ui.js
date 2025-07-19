@@ -3,7 +3,7 @@
 // ====================================================================
 
 import { AppState, SCRIPT_URL, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent } from './app.js';
-import { handleLoginApi, batalkanTransaksiApi } from './api.js';
+import { handleLoginApi, batalkanTransaksiApi, muatSemuaDataAwal } from './api.js';
 
 // --- Variabel State Lokal untuk UI ---
 export let dataTransaksiTerakhir = null;
@@ -31,13 +31,18 @@ function terjemahkanSatuan(satuan) {
     return satuan;
 }
 
-export function checkLoginStatus() {
+export async function checkLoginStatus() {
     const user = sessionStorage.getItem('user');
     if (user) {
         const userData = JSON.parse(user);
         AppState.currentUser = userData;
+        
         loginContainer.classList.add('hidden');
         appContainer.classList.remove('hidden');
+        infoNamaKasir.textContent = 'Memuat data aplikasi...';
+        
+        await muatSemuaDataAwal();
+
         infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
         if (userData.Role === 'admin') {
             navPengguna.classList.remove('hidden');
@@ -59,11 +64,19 @@ export async function handleLogin(formData) {
     
     const result = await handleLoginApi(formData);
 
-    if (!result.success) {
+    if (result.success) {
+        loginContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        infoNamaKasir.textContent = 'Memuat data aplikasi...'; 
+        
+        await muatSemuaDataAwal();
+        
+        await checkLoginStatus(); 
+    } else {
         loginStatus.textContent = result.message;
+        button.disabled = false;
+        button.textContent = 'Login';
     }
-    button.disabled = false;
-    button.textContent = 'Login';
 }
 
 export function handleLogout() {
@@ -395,36 +408,32 @@ export function showMenu(menuToShow) {
     menuToShow.classList.remove('hidden');
 }
 
-export async function rekomendasiKodeBarang(query) {
+export function rekomendasiKodeBarang(query) {
     const q = query.toLowerCase();
     if (q.length < 1 || AppState.modeEdit.barang) {
         rekomendasiKodeDiv.classList.add('hidden');
         rekomendasiKodeDiv.innerHTML = '';
         return;
     }
-
-    try {
-        const response = await fetch(`${SCRIPT_URL}?action=getBarang&query=${encodeURIComponent(q)}`);
-        const result = await response.json();
-
-        rekomendasiKodeDiv.innerHTML = '';
-        if (result.status === 'sukses' && result.data.length > 0) {
-            rekomendasiKodeDiv.classList.remove('hidden');
-            result.data.slice(0, 5).forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'rekomendasi-item';
-                itemDiv.textContent = `${item.Kode_Barang} - ${item.Nama_Barang}`;
-                itemDiv.addEventListener('click', () => {
-                    masukModeEdit(item);
-                    rekomendasiKodeDiv.classList.add('hidden');
-                });
-                rekomendasiKodeDiv.appendChild(itemDiv);
+    const hasilFilter = AppState.barang.filter(item => {
+        const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
+        const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
+        return kode.includes(q) || nama.includes(q);
+    }).slice(0, 5);
+    rekomendasiKodeDiv.innerHTML = '';
+    if (hasilFilter.length > 0) {
+        rekomendasiKodeDiv.classList.remove('hidden');
+        hasilFilter.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'rekomendasi-item';
+            itemDiv.textContent = `${item.Kode_Barang} - ${item.Nama_Barang}`;
+            itemDiv.addEventListener('click', () => {
+                masukModeEdit(item);
+                rekomendasiKodeDiv.classList.add('hidden');
             });
-        } else {
-            rekomendasiKodeDiv.classList.add('hidden');
-        }
-    } catch (error) {
-        console.error("Gagal mengambil rekomendasi:", error);
+            rekomendasiKodeDiv.appendChild(itemDiv);
+        });
+    } else {
         rekomendasiKodeDiv.classList.add('hidden');
     }
 }
@@ -523,16 +532,10 @@ export function handleKirimWhatsApp() {
     window.open(urlWhatsApp, '_blank');
 }
 
-// ====================================================================
-// === FUNGSI BARU UNTUK FILTER LAPORAN ===
-// ====================================================================
-
 function parseTanggalLaporan(tanggalString) {
     if (!tanggalString || typeof tanggalString !== 'string') return null;
-    const parts = tanggalString.split(/[\/, :]+/); // Memecah berdasarkan '/', ',', ':', dan spasi
+    const parts = tanggalString.split(/[\/, :.]+/);
     if (parts.length < 5) return null;
-    // Format: hari, bulan, tahun, jam, menit
-    // JS Date: tahun, bulan (0-11), hari, jam, menit
     return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
 }
 
@@ -563,7 +566,7 @@ export function terapkanFilterLaporan() {
 
     const dataTersaring = AppState.laporan.filter(trx => {
         const tanggalTrx = parseTanggalLaporan(trx.Timestamp_Transaksi);
-        if (!tanggalTrx) return true; // Jika tanggal tidak bisa diparsing, jangan filter
+        if (!tanggalTrx) return true;
 
         if (tanggalMulai && tanggalTrx < tanggalMulai) return false;
         if (tanggalSelesai && tanggalTrx > tanggalSelesai) return false;
