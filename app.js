@@ -7,10 +7,9 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAs0_RoDvvaU9gtfPYGLxswZWdGRfi3LJt8_--e7bPzEBmsaWVO3at36-FWvRTPrJW/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhue9eY4KEOD9SCm1Wdbq0Md1wSQVyxCbkdAnI9lLoOg9Kjljf43XXMlaAfj_o-NCX/exec"; // <-- PASTIKAN URL INI SUDAH YANG TERBARU
 
 export const API_ACTIONS = {
-    // GET_BARANG dihapus karena digantikan oleh rute baru di backend
     LOGIN: 'loginUser', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
     BATALKAN_TRANSAKSI: 'batalkanTransaksi'
 };
@@ -45,7 +44,7 @@ export const btnSimpan = document.getElementById('btn-simpan');
 export const btnBatal = document.getElementById('btn-batal');
 export const tabelBarangBody = document.getElementById('tabel-barang-body');
 export const loadingManajemen = document.getElementById('loading-manajemen');
-// === PERBAIKAN: Menambahkan selektor untuk kontrol pencarian di manajemen barang ===
+// === PERBAIKAN: Menambahkan selektor untuk kontrol pencarian baru ===
 export const inputCariManajemen = document.getElementById('input-cari-manajemen');
 export const btnCariManajemen = document.getElementById('btn-cari-manajemen');
 export const btnTampilkanSemua = document.getElementById('btn-tampilkan-semua');
@@ -141,6 +140,7 @@ btnTampilkanSemua.addEventListener('click', () => {
     }
 });
 
+
 // --- Event Listener Lainnya ---
 formBarang.addEventListener('submit', api.handleFormSubmit);
 btnBatal.addEventListener('click', ui.keluarModeEdit);
@@ -148,8 +148,8 @@ tabelBarangBody.addEventListener('click', (e) => {
     const target = e.target;
     if (target.classList.contains('btn-ubah')) {
         const id = target.dataset.id;
-        // Ambil data dari tabel yang sedang ditampilkan, bukan dari cache global
-        const dataBarang = ui.getDataFromrenderedTable(id); 
+        // Ambil data dari data yang sedang ditampilkan (disimpan sementara di ui.js)
+        const dataBarang = ui.getDataFromLastRender(id); 
         if (dataBarang) ui.masukModeEdit(dataBarang);
     }
     if (target.classList.contains('btn-hapus')) {
@@ -178,8 +178,7 @@ tabelPenggunaBody.addEventListener('click', (e) => {
 });
 
 inputKodeBarang.addEventListener('keyup', (e) => {
-    // Fitur ini mungkin perlu penyesuaian jika data barang tidak dimuat semua
-    // Untuk saat ini, kita biarkan, akan berfungsi jika 'Tampilkan Semua' sudah diklik
+    // Fitur ini akan berfungsi dengan baik jika 'Tampilkan Semua' sudah diklik
     ui.rekomendasiKodeBarang(inputKodeBarang.value);
 });
 
