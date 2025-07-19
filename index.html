@@ -49,12 +49,10 @@
             <div id="notifikasi" class="hidden"></div>
             <div id="area-struk" class="hidden">
                 <div id="struk-content"></div>
-                <!-- === PERBAIKAN: Menambahkan tombol baru untuk WhatsApp === -->
                 <div class="struk-actions">
                     <button id="btn-cetak-struk">Cetak Struk</button>
                     <button id="btn-kirim-whatsapp" style="background-color: #25D366;">Kirim WhatsApp</button>
                     <button id="btn-ubah-transaksi" style="background-color: #f39c12;">Ubah Transaksi</button>
-                    <!-- === TAMBAHKAN KEMBALI TOMBOL INI === -->
                     <button id="btn-transaksi-baru" style="background-color: #95a5a6;">Transaksi Baru</button>
                 </div>
             </div>
@@ -87,29 +85,27 @@
                         </div>
                     </form>
                 </div>
-               <div class="tabel-container">
-                <!-- === ELEMEN KONTROL BARU DI SINI === -->
-                <div class="tabel-controls" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
-                    <input type="text" id="input-cari-manajemen" placeholder="Ketik Kode atau Nama Barang untuk mencari..." style="flex-grow: 1;">
-                    <button id="btn-cari-manajemen">Cari</button>
-                    <button id="btn-tampilkan-semua" style="background-color: #3498db;">Tampilkan Semua Data</button>
+                <div class="tabel-container">
+                    <div class="tabel-controls" style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                        <input type="text" id="input-cari-manajemen" placeholder="Ketik Kode atau Nama Barang untuk mencari..." style="flex-grow: 1;">
+                        <button id="btn-cari-manajemen">Cari</button>
+                        <button id="btn-tampilkan-semua" style="background-color: #3498db;">Tampilkan Semua Data</button>
+                    </div>
+                    <div id="loading-manajemen" class="loading hidden"></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kode</th>
+                                <th>Nama Barang</th>
+                                <th>Kategori</th>
+                                <th>Stok Dasar</th>
+                                <th>Harga Dasar</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-barang-body"></tbody>
+                    </table>
                 </div>
-                
-                <div id="loading-manajemen" class="loading hidden"></div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Kode</th>
-                            <th>Nama Barang</th>
-                            <th>Kategori</th>
-                            <th>Stok Dasar</th>
-                            <th>Harga Dasar</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabel-barang-body"></tbody>
-                </table>
-            </div>
             </section>
 
             <!-- TAMPILAN 2: KASIR TRANSAKSI -->
@@ -172,6 +168,40 @@
             <!-- TAMPILAN 3: LAPORAN PENJUALAN -->
             <section id="menu-laporan" class="hidden">
                 <h2>Laporan Penjualan</h2>
+
+                <!-- === PERBAIKAN: Form Filter Ditambahkan Di Sini === -->
+                <div class="form-container">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="filter-tanggal-mulai">Dari Tanggal</label>
+                            <input type="date" id="filter-tanggal-mulai">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-tanggal-selesai">Sampai Tanggal</label>
+                            <input type="date" id="filter-tanggal-selesai">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-kasir">Kasir</label>
+                            <select id="filter-kasir">
+                                <option value="">Semua Kasir</option>
+                                <!-- Opsi kasir akan diisi oleh JavaScript -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-status">Status Transaksi</label>
+                            <select id="filter-status">
+                                <option value="">Semua Status</option>
+                                <option value="COMPLETED">Selesai</option>
+                                <option value="CANCELLED">Dibatalkan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-filter-laporan" type="button" style="background-color: #3498db;">Terapkan Filter</button>
+                        <button id="btn-reset-filter" type="button" style="background-color: #95a5a6;">Reset Filter</button>
+                    </div>
+                </div>
+
                 <div class="tabel-container">
                     <div id="loading-laporan" class="loading hidden"></div>
                     <table>
@@ -182,6 +212,7 @@
                                 <th>Kasir</th>
                                 <th>Detail Barang</th>
                                 <th>Total Belanja</th>
+                                <!-- === PERBAIKAN: Kolom Status Ditambahkan === -->
                                 <th>Status</th>
                             </tr>
                         </thead>
