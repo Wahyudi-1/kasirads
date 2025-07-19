@@ -534,19 +534,20 @@ export function handleKirimWhatsApp() {
 
 function parseTanggalLaporan(tanggalString) {
     if (!tanggalString || typeof tanggalString !== 'string') return null;
-    const parts = tanggalString.split(/[\/, :.]+/);
-    if (parts.length < 5) return null;
-    return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
+    const [tanggalBagian, waktuBagian] = tanggalString.split(', ');
+    if (!tanggalBagian || !waktuBagian) return null;
+    const [hari, bulan, tahun] = tanggalBagian.split('/');
+    const [jam, menit] = waktuBagian.split('.');
+    if (!hari || !bulan || !tahun || !jam || !menit) return null;
+    return new Date(tahun, bulan - 1, hari, jam, menit);
 }
 
 export function populasiFilterKasir() {
     const filterKasir = document.getElementById('filter-kasir');
     const namaKasir = [...new Set(AppState.laporan.map(trx => trx.Kasir).filter(Boolean))];
-    
     while (filterKasir.options.length > 1) {
         filterKasir.remove(1);
     }
-
     namaKasir.sort().forEach(nama => {
         filterKasir.add(new Option(nama, nama));
     });
@@ -566,13 +567,12 @@ export function terapkanFilterLaporan() {
 
     const dataTersaring = AppState.laporan.filter(trx => {
         const tanggalTrx = parseTanggalLaporan(trx.Timestamp_Transaksi);
-        if (!tanggalTrx) return true;
-
+        if (!tanggalTrx) return false;
         if (tanggalMulai && tanggalTrx < tanggalMulai) return false;
         if (tanggalSelesai && tanggalTrx > tanggalSelesai) return false;
         if (kasirValue && trx.Kasir !== kasirValue) return false;
-        if (statusValue && (trx.Status || 'COMPLETED') !== statusValue) return false;
-
+        const statusTransaksi = trx.Status || 'COMPLETED';
+        if (statusValue && statusTransaksi !== statusValue) return false;
         return true;
     });
 
