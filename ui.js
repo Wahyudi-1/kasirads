@@ -3,7 +3,6 @@
 // ====================================================================
 
 import { AppState, SCRIPT_URL, loginContainer, appContainer, formLogin, loginStatus, infoNamaKasir, btnLogout, notifikasi, navManajemen, navTransaksi, navLaporan, navPengguna, semuaMenu, menuManajemen, menuTransaksi, menuLaporan, menuPengguna, formBarang, idBarangInput, inputKodeBarang, rekomendasiKodeDiv, btnTambah, btnSimpan, btnBatal, tabelBarangBody, loadingManajemen, formPengguna, idPenggunaInput, btnTambahPengguna, btnSimpanPengguna, btnBatalPengguna, tabelPenggunaBody, loadingPengguna, inputCari, hasilPencarianDiv, loadingCari, formTambahKeranjang, namaBarangTerpilihSpan, itemTerpilihDataInput, inputJumlahKasir, selectSatuanKasir, btnTambahKeranjang, tabelKeranjangBody, totalBelanjaSpan, inputBayar, kembalianSpan, btnProsesTransaksi, tabelLaporanBody, loadingLaporan, areaStruk, strukContent, 
-    // --- PERBAIKAN: Impor elemen scanner dari app.js ---
     scannerContainer
 } from './app.js';
 import { handleLoginApi, batalkanTransaksiApi, muatSemuaDataAwal } from './api.js';
@@ -12,7 +11,6 @@ import { handleLoginApi, batalkanTransaksiApi, muatSemuaDataAwal } from './api.j
 export let dataTransaksiTerakhir = null;
 export let idTransaksiTerakhir = null;
 let dataBarangTerakhirRender = [];
-// --- PERBAIKAN: Variabel untuk instance scanner dan target inputnya ---
 let html5QrCode = null;
 let scannerTargetInput = null;
 
@@ -62,99 +60,64 @@ export async function checkLoginStatus() {
     }
 }
 
-// --- PERBAIKAN: Logika Inti untuk Scanner ---
+// --- LOGIKA UNTUK FITUR SCANNER ---
 
-/**
- * Callback yang dijalankan ketika scanner berhasil memindai kode.
- * @param {string} decodedText - Teks hasil pemindaian (kode batang).
- * @param {object} decodedResult - Objek detail hasil pemindaian.
- */
 function onScanSuccess(decodedText, decodedResult) {
-    // Hentikan scanner agar kamera mati
     stopScanner();
 
     if (scannerTargetInput) {
-        // Masukkan hasil scan ke dalam input yang ditargetkan
         scannerTargetInput.value = decodedText;
         tampilkanNotifikasi(`Kode berhasil dipindai: ${decodedText}`, 'sukses');
 
-        // Otomatis picu aksi setelah scan
-        if (scannerTargetInput.id === 'Kode_Barang' || scannerTargetInput.id === 'input-cari-manajemen') {
-            // Jika di halaman manajemen, cari barang untuk mode edit atau pencarian tabel
-            inputKodeBarang.value = decodedText; // Pastikan input form juga terisi
+        // Bertindak sebagai "router" berdasarkan input mana yang aktif
+        if (scannerTargetInput.id === 'Kode_Barang') {
+            // Jika di halaman manajemen, picu pencarian cerdas
             rekomendasiKodeBarang(decodedText);
         } else if (scannerTargetInput.id === 'input-cari-barang') {
-            // Jika di halaman kasir, langsung cari barang
+            // Jika di halaman kasir, picu pencarian untuk keranjang
             cariBarang();
         }
     }
 }
 
-/**
- * Callback untuk menangani error saat pemindaian (opsional, baik untuk debug).
- * @param {string} error - Pesan error.
- */
 function onScanFailure(error) {
-    // Fungsi ini bisa diabaikan, karena akan terpanggil terus-menerus
-    // jika tidak ada QR code di depan kamera.
+    // Abaikan error, karena ini akan terus terpanggil jika tidak ada barcode
 }
 
-/**
- * Memulai proses pemindaian.
- * @param {HTMLElement} targetInputElement - Elemen input yang akan diisi hasil scan.
- */
 export function startScanner(targetInputElement) {
     scannerTargetInput = targetInputElement;
 
-    // Inisialisasi instance scanner jika belum ada
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode("scanner-viewfinder");
     }
 
     scannerContainer.classList.remove('hidden');
 
-    // Konfigurasi scanner
     const config = { 
-        fps: 10, // Frame per second
-        qrbox: { width: 250, height: 250 } // Ukuran kotak pemindaian
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
     };
 
-    // Mulai scanner, minta akses ke kamera belakang (environment)
-    html5QrCode.start(
-        { facingMode: "environment" }, 
-        config, 
-        onScanSuccess, 
-        onScanFailure
-    ).catch(err => {
-        // Coba kamera depan jika kamera belakang gagal
+    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+    .catch(err => {
+        // Fallback ke kamera depan jika kamera belakang gagal
         console.warn("Kamera belakang gagal, mencoba kamera depan:", err);
-        html5QrCode.start(
-            { facingMode: "user" },
-            config,
-            onScanSuccess,
-            onScanFailure
-        ).catch(err2 => {
-            tampilkanNotifikasi('Gagal memulai scanner: Tidak dapat mengakses kamera. ' + err2, 'error');
+        html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, onScanFailure)
+        .catch(err2 => {
+            tampilkanNotifikasi('Gagal memulai scanner: ' + err2, 'error');
             scannerContainer.classList.add('hidden');
         });
     });
 }
 
-/**
- * Menghentikan scanner dan menyembunyikan overlay.
- */
 export function stopScanner() {
     if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop()
-            .then(ignore => {
-                // Berhasil dihentikan
-            })
-            .catch(err => {
-                console.error("Gagal menghentikan scanner.", err);
-            });
+        html5QrCode.stop().catch(err => console.error("Gagal menghentikan scanner.", err));
     }
     scannerContainer.classList.add('hidden');
 }
+
+// --- AKHIR LOGIKA SCANNER ---
 
 export async function handleLogin(formData) {
     const button = formLogin.querySelector('button');
@@ -171,7 +134,6 @@ export async function handleLogin(formData) {
         
         await muatSemuaDataAwal();
         
-        // Setelah data dimuat, baru selesaikan proses setup UI
         const userData = AppState.currentUser;
         infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
         if (userData.Role === 'admin') {
@@ -500,18 +462,33 @@ export function showMenu(menuToShow) {
     menuToShow.classList.remove('hidden');
 }
 
+// === FUNGSI YANG DIPERBAIKI (LOGIKA PENCARIAN CERDAS) ===
 export function rekomendasiKodeBarang(query) {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
     if (q.length < 1 || AppState.modeEdit.barang) {
         rekomendasiKodeDiv.classList.add('hidden');
         rekomendasiKodeDiv.innerHTML = '';
         return;
     }
+
+    // 1. Cek kecocokan persis pada Kode Barang terlebih dahulu
+    const exactMatch = AppState.barang.find(item => String(item.Kode_Barang).toLowerCase() === q);
+
+    if (exactMatch) {
+        // Jika ditemukan, langsung isi form dan hentikan fungsi
+        masukModeEdit(exactMatch);
+        rekomendasiKodeDiv.classList.add('hidden');
+        rekomendasiKodeDiv.innerHTML = '';
+        return;
+    }
+    
+    // 2. Jika tidak ada kecocokan persis, lanjutkan dengan pencarian parsial
     const hasilFilter = AppState.barang.filter(item => {
         const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
         const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
         return kode.includes(q) || nama.includes(q);
     }).slice(0, 5);
+
     rekomendasiKodeDiv.innerHTML = '';
     if (hasilFilter.length > 0) {
         rekomendasiKodeDiv.classList.remove('hidden');
@@ -555,7 +532,6 @@ export async function handleBatalDanUlangi() {
     const result = await batalkanTransaksiApi(idTransaksiTerakhir);
     if (result.status === 'sukses') {
       tampilkanNotifikasi(result.message, 'sukses');
-      // Muat ulang semua data agar cache sinkron, terutama stok
       await muatSemuaDataAwal();
       AppState.keranjang = dataTransaksiTerakhir.keranjang;
       areaStruk.classList.add('hidden');
@@ -622,13 +598,6 @@ export function handleKirimWhatsApp() {
     const pesanStruk = formatStrukUntukWhatsApp(dataTransaksiTerakhir, idTransaksiTerakhir);
     const urlWhatsApp = `https://api.whatsapp.com/send?phone=${nomorTerformat}&text=${pesanStruk}`;
     window.open(urlWhatsApp, '_blank');
-}
-
-function parseTanggalLaporan(tanggalString) {
-    if (!tanggalString || typeof tanggalString !== 'string') return null;
-    const parts = tanggalString.split(/[\/, :.]+/);
-    if (parts.length < 5) return null;
-    return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
 }
 
 export function populasiFilterKasir() {
