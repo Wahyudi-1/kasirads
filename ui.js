@@ -64,44 +64,31 @@ export async function checkLoginStatus() {
 
 function onScanSuccess(decodedText, decodedResult) {
     stopScanner();
-
     if (scannerTargetInput) {
         scannerTargetInput.value = decodedText;
         tampilkanNotifikasi(`Kode berhasil dipindai: ${decodedText}`, 'sukses');
-
-        // Bertindak sebagai "router" berdasarkan input mana yang aktif
         if (scannerTargetInput.id === 'Kode_Barang') {
-            // Jika di halaman manajemen, picu pencarian cerdas
             rekomendasiKodeBarang(decodedText);
         } else if (scannerTargetInput.id === 'input-cari-barang') {
-            // Jika di halaman kasir, picu pencarian untuk keranjang
             cariBarang();
         }
     }
 }
 
-function onScanFailure(error) {
-    // Abaikan error, karena ini akan terus terpanggil jika tidak ada barcode
-}
+function onScanFailure(error) { /* Abaikan */ }
 
 export function startScanner(targetInputElement) {
     scannerTargetInput = targetInputElement;
-
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode("scanner-viewfinder");
     }
-
     scannerContainer.classList.remove('hidden');
-
     const config = { 
         fps: 10,
         qrbox: { width: 250, height: 250 }
     };
-
     html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
     .catch(err => {
-        // Fallback ke kamera depan jika kamera belakang gagal
-        console.warn("Kamera belakang gagal, mencoba kamera depan:", err);
         html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, onScanFailure)
         .catch(err2 => {
             tampilkanNotifikasi('Gagal memulai scanner: ' + err2, 'error');
@@ -251,18 +238,38 @@ export function keluarModeEditPengguna() {
     btnBatalPengguna.classList.add('hidden');
 }
 
+// === FUNGSI YANG DIPERBAIKI (LOGIKA PENCARIAN CERDAS DI HALAMAN KASIR) ===
 export function cariBarang() {
-    const query = inputCari.value.toLowerCase();
+    const query = inputCari.value.toLowerCase().trim();
+    
+    if (query.length === 0) {
+        hasilPencarianDiv.classList.add('hidden');
+        hasilPencarianDiv.innerHTML = '';
+        return;
+    }
+
+    // 1. Prioritaskan pencarian dengan KODE BARANG yang persis
+    const exactMatch = AppState.barang.find(item => String(item.Kode_Barang).toLowerCase() === query);
+    if (exactMatch) {
+        // Jika ditemukan, langsung pilih barang itu dan lewati daftar pencarian
+        pilihBarang(exactMatch);
+        return; // Hentikan fungsi di sini
+    }
+
+    // 2. Jika tidak ada kode yang persis, lanjutkan dengan pencarian parsial (nama atau kode)
+    // Minimal 2 karakter untuk pencarian parsial agar tidak terlalu berat
     if (query.length < 2) {
         hasilPencarianDiv.classList.add('hidden');
         hasilPencarianDiv.innerHTML = '';
         return;
     }
+
     const hasilFilter = AppState.barang.filter(item => {
         const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
         const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
         return kode.includes(query) || nama.includes(query);
     }).slice(0, 10);
+    
     hasilPencarianDiv.innerHTML = '';
     if (hasilFilter.length > 0) {
         hasilPencarianDiv.classList.remove('hidden');
@@ -290,10 +297,11 @@ export function pilihBarang(item) {
     if (item.Harga_Karton > 0 && item.Pcs_Per_Karton > 0) {
         selectSatuanKasir.add(new Option(`Karton / Sak - ${formatRupiah(item.Harga_Karton)}`, 'Karton'));
     }
+    // Hapus input pencarian dan sembunyikan hasilnya setelah barang dipilih
     inputCari.value = '';
     hasilPencarianDiv.classList.add('hidden');
     inputJumlahKasir.value = 1;
-    inputJumlahKasir.focus();
+    inputJumlahKasir.focus(); // Langsung fokus ke input jumlah
 }
 
 export function handleTambahKeKeranjang(e) {
@@ -462,7 +470,6 @@ export function showMenu(menuToShow) {
     menuToShow.classList.remove('hidden');
 }
 
-// === FUNGSI YANG DIPERBAIKI (LOGIKA PENCARIAN CERDAS) ===
 export function rekomendasiKodeBarang(query) {
     const q = query.toLowerCase().trim();
     if (q.length < 1 || AppState.modeEdit.barang) {
@@ -470,25 +477,18 @@ export function rekomendasiKodeBarang(query) {
         rekomendasiKodeDiv.innerHTML = '';
         return;
     }
-
-    // 1. Cek kecocokan persis pada Kode Barang terlebih dahulu
     const exactMatch = AppState.barang.find(item => String(item.Kode_Barang).toLowerCase() === q);
-
     if (exactMatch) {
-        // Jika ditemukan, langsung isi form dan hentikan fungsi
         masukModeEdit(exactMatch);
         rekomendasiKodeDiv.classList.add('hidden');
         rekomendasiKodeDiv.innerHTML = '';
         return;
     }
-    
-    // 2. Jika tidak ada kecocokan persis, lanjutkan dengan pencarian parsial
     const hasilFilter = AppState.barang.filter(item => {
         const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
         const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
         return kode.includes(q) || nama.includes(q);
     }).slice(0, 5);
-
     rekomendasiKodeDiv.innerHTML = '';
     if (hasilFilter.length > 0) {
         rekomendasiKodeDiv.classList.remove('hidden');
