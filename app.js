@@ -10,12 +10,27 @@ import * as ui from './ui.js';
 export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhue9eY4KEOD9SCm1Wdbq0Md1wSQVyxCbkdAnI9lLoOg9Kjljf43XXMlaAfj_o-NCX/exec";
 
 export const API_ACTIONS = {
-    LOGIN: 'loginUser', TAMBAH_BARANG: 'tambahBarang', UBAH_BARANG: 'ubahBarang', HAPUS_BARANG: 'hapusBarang', GET_PENGGUNA: 'getSemuaPengguna', TAMBAH_PENGGUNA: 'tambahPengguna', UBAH_PENGGUNA: 'ubahPengguna', HAPUS_PENGGUNA: 'hapusPengguna', PROSES_TRANSAKSI: 'prosesTransaksi', GET_LAPORAN: 'getRiwayatTransaksi',
+    LOGIN: 'loginUser', 
+    TAMBAH_BARANG: 'tambahBarang', 
+    UBAH_BARANG: 'ubahBarang', 
+    HAPUS_BARANG: 'hapusBarang', 
+    GET_PENGGUNA: 'getSemuaPengguna', 
+    TAMBAH_PENGGUNA: 'tambahPengguna', 
+    UBAH_PENGGUNA: 'ubahPengguna', 
+    HAPUS_PENGGUNA: 'hapusPengguna', 
+    PROSES_TRANSAKSI: 'prosesTransaksi', 
+    GET_LAPORAN: 'getRiwayatTransaksi',
     BATALKAN_TRANSAKSI: 'batalkanTransaksi'
 };
 
 export const AppState = {
-    keranjang: [], barang: [], pengguna: [], laporan: [], modeEdit: { barang: false, pengguna: false }, currentUser: null, timeoutCari: null
+    keranjang: [], 
+    barang: [], 
+    pengguna: [], 
+    laporan: [], // Laporan sekarang kosong di awal (lazy load)
+    modeEdit: { barang: false, pengguna: false }, 
+    currentUser: null, 
+    timeoutCari: null
 };
 
 // --- Seleksi Elemen DOM ---
@@ -72,6 +87,7 @@ export const tabelLaporanBody = document.getElementById('tabel-laporan-body');
 export const loadingLaporan = document.getElementById('loading-laporan');
 export const btnFilterLaporan = document.getElementById('btn-filter-laporan');
 export const btnResetFilter = document.getElementById('btn-reset-filter');
+export const btnMuatUlangLaporan = document.getElementById('btn-muat-ulang-laporan'); // Tombol Baru
 export const areaStruk = document.getElementById('area-struk');
 export const strukContent = document.getElementById('struk-content');
 export const btnCetakStruk = document.getElementById('btn-cetak-struk');
@@ -79,7 +95,6 @@ export const btnUbahTransaksi = document.getElementById('btn-ubah-transaksi');
 export const btnKirimWhatsApp = document.getElementById('btn-kirim-whatsapp');
 export const btnTransaksiBaru = document.getElementById('btn-transaksi-baru');
 export const btnTransaksiBaruKasir = document.getElementById('btn-transaksi-baru-kasir');
-// --- PERBAIKAN: Selektor untuk elemen scanner ---
 export const scannerContainer = document.getElementById('scanner-container');
 export const btnScanManajemen = document.getElementById('btn-scan-manajemen');
 export const btnScanKasir = document.getElementById('btn-scan-kasir');
@@ -87,7 +102,7 @@ export const btnCloseScanner = document.getElementById('btn-close-scanner');
 
 
 // ====================================================================
-// EVENT LISTENERS UTAMA - Titik Masuk Aplikasi
+// EVENT LISTENERS UTAMA
 // ====================================================================
 
 document.addEventListener('DOMContentLoaded', ui.checkLoginStatus);
@@ -103,32 +118,31 @@ btnLogout.addEventListener('click', ui.handleLogout);
 navManajemen.addEventListener('click', () => {
     ui.setActiveNav(navManajemen);
     ui.showMenu(menuManajemen);
-    // Kosongkan tabel dan pencarian saat tab dibuka, data sudah ada di cache
     ui.renderTabelBarang([]);
     inputCariManajemen.value = '';
+    // Data barang sudah ada di cache (dimuat saat login)
+    api.muatDataBarang(); 
 });
 
 navTransaksi.addEventListener('click', () => {
     ui.setActiveNav(navTransaksi);
     ui.showMenu(menuTransaksi);
-    // Tidak perlu aksi, data sudah dimuat di awal
 });
 
 navLaporan.addEventListener('click', () => {
     ui.setActiveNav(navLaporan);
     ui.showMenu(menuLaporan);
-    // Panggil fungsi yang hanya memproses dan merender dari data cache
-    api.muatLaporan(); 
+    // Panggil fungsi API yang pintar (ambil dari server jika belum ada)
+    api.ambilDataLaporan(); 
 });
 
 navPengguna.addEventListener('click', () => {
     ui.setActiveNav(navPengguna);
     ui.showMenu(menuPengguna);
-    // Panggil fungsi yang hanya merender dari data cache
     api.muatDataPengguna();
 });
 
-// --- Event Listener untuk Kontrol Pencarian di Halaman Manajemen ---
+// --- Event Listener Kontrol Pencarian Manajemen ---
 btnCariManajemen.addEventListener('click', () => {
     const query = inputCariManajemen.value;
     api.muatDataBarang(query);
@@ -143,7 +157,6 @@ inputCariManajemen.addEventListener('keypress', (e) => {
 
 btnTampilkanSemua.addEventListener('click', () => {
     inputCariManajemen.value = '';
-    // Panggil muatDataBarang tanpa query untuk menampilkan semua data dari cache
     api.muatDataBarang(); 
 });
 
@@ -182,7 +195,7 @@ tabelPenggunaBody.addEventListener('click', (e) => {
     }
 });
 
-// --- Event Listener Lainnya ---
+// --- Event Listener Kasir ---
 let timeoutRekomendasi;
 inputKodeBarang.addEventListener('keyup', (e) => {
     clearTimeout(timeoutRekomendasi);
@@ -242,6 +255,7 @@ tabelKeranjangBody.addEventListener('change', (e) => {
     }
 });
 
+// --- Event Listener Struk & Transaksi Lain ---
 btnCetakStruk.addEventListener('click', ui.cetakStruk);
 btnUbahTransaksi.addEventListener('click', () => {
     ui.handleBatalDanUlangi();
@@ -272,28 +286,28 @@ btnTransaksiBaruKasir.addEventListener('click', () => {
     }
 });
 
+// --- Event Listener Laporan ---
 btnFilterLaporan.addEventListener('click', ui.terapkanFilterLaporan);
-
 btnResetFilter.addEventListener('click', () => {
     document.getElementById('filter-tanggal-mulai').value = '';
     document.getElementById('filter-tanggal-selesai').value = '';
     document.getElementById('filter-kasir').value = '';
     document.getElementById('filter-status').value = '';
-    ui.renderTabelLaporan([]);
+    // Kembalikan ke semua data laporan yang ada di cache
+    ui.renderTabelLaporan(AppState.laporan); 
+});
+btnMuatUlangLaporan.addEventListener('click', () => {
+    api.ambilDataLaporan(true); // true = paksa refresh dari server
 });
 
-// --- PERBAIKAN: Event Listener untuk Fitur Scanner ---
+
+// --- Event Listener Scanner ---
 btnScanManajemen.addEventListener('click', () => {
-    // Memulai scanner dan memberitahu fungsi mana input yang harus diisi
     ui.startScanner(inputKodeBarang);
 });
-
 btnScanKasir.addEventListener('click', () => {
-    // Memulai scanner dan memberitahu fungsi mana input yang harus diisi
     ui.startScanner(inputCari);
 });
-
 btnCloseScanner.addEventListener('click', () => {
-    // Menghentikan scanner dan menutup overlay
     ui.stopScanner();
 });
