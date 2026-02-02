@@ -3,34 +3,72 @@
 // ====================================================================
 
 import { AppState, SCRIPT_URL, API_ACTIONS } from './app.js';
-import { tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, renderTabelLaporan, tampilkanStruk, keluarModeEdit, keluarModeEditPengguna, checkLoginStatus, populasiFilterKasir } from './ui.js';
+import { 
+    tampilkanNotifikasi, renderTabelBarang, renderTabelPengguna, 
+    renderTabelLaporan, tampilkanStruk, keluarModeEdit, 
+    keluarModeEditPengguna, populasiFilterKasir 
+} from './ui.js';
 
 // --- FUNGSI-FUNGSI API ---
 
+// 1. Fungsi Inisialisasi Ringan (Hanya Barang & Pengguna)
 export async function muatSemuaDataAwal() {
-    console.log("Memulai pemuatan semua data awal...");
+    console.log("Memulai pemuatan data kritis (Barang & Pengguna)...");
     try {
-        const [hasilBarang, hasilLaporan, hasilPengguna] = await Promise.all([
-            fetch(`${SCRIPT_URL}?action=getBarang`),
-            fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`),
-            fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`)
-        ]);
+        const promises = [fetch(`${SCRIPT_URL}?action=getBarang`)];
+        
+        // Hanya ambil data pengguna jika perlu (untuk efisiensi), tapi di sini kita ambil saja sekalian
+        promises.push(fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_PENGGUNA}`));
+
+        const [hasilBarang, hasilPengguna] = await Promise.all(promises);
 
         const barang = await hasilBarang.json();
-        const laporan = await hasilLaporan.json();
         const pengguna = await hasilPengguna.json();
 
         if (barang.status === 'sukses') AppState.barang = barang.data;
-        if (laporan.status === 'sukses') AppState.laporan = laporan.data;
         if (pengguna.status === 'sukses') AppState.pengguna = pengguna.data;
         
-        console.log("Semua data awal berhasil dimuat.");
+        console.log("Data kritis berhasil dimuat.");
         return { success: true };
 
     } catch (error) {
-        console.error("Gagal memuat semua data awal:", error);
+        console.error("Gagal memuat data awal:", error);
         tampilkanNotifikasi('Gagal memuat data aplikasi. Coba muat ulang halaman.', 'error');
         return { success: false };
+    }
+}
+
+// 2. Fungsi Khusus untuk Memuat Laporan (Lazy Loading)
+export async function ambilDataLaporan(paksaRefresh = false) {
+    // Jika data sudah ada di cache dan tidak dipaksa refresh, gunakan cache
+    if (AppState.laporan.length > 0 && !paksaRefresh) {
+        console.log("Menggunakan cache laporan lokal.");
+        renderTabelLaporan(AppState.laporan);
+        populasiFilterKasir();
+        return;
+    }
+
+    const loadingLaporan = document.getElementById('loading-laporan');
+    loadingLaporan.classList.remove('hidden');
+    
+    try {
+        console.log("Mengambil data laporan dari server...");
+        const response = await fetch(`${SCRIPT_URL}?action=${API_ACTIONS.GET_LAPORAN}`);
+        const result = await response.json();
+
+        if (result.status === 'sukses') {
+            AppState.laporan = result.data;
+            renderTabelLaporan(AppState.laporan);
+            populasiFilterKasir();
+            tampilkanNotifikasi('Data laporan berhasil diperbarui.', 'sukses');
+        } else {
+            tampilkanNotifikasi('Gagal memuat laporan: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error("Error ambil laporan:", error);
+        tampilkanNotifikasi('Gagal terhubung ke server untuk mengambil laporan.', 'error');
+    } finally {
+        loadingLaporan.classList.add('hidden');
     }
 }
 
@@ -46,7 +84,7 @@ export async function handleLoginApi(dataUntukKirim) {
             return { success: false, message: result.message };
         }
     } catch (error) {
-        return { success: false, message: 'Terjadi kesalahan jaringan.' };
+        return { success: false, message: 'Terjadi kesalahan jaringan saat login.' };
     }
 }
 
@@ -81,7 +119,7 @@ export async function handleFormSubmit(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formBarang.reset();
             keluarModeEdit();
-            await muatSemuaDataAwal();
+            await muatSemuaDataAwal(); // Refresh data barang
             renderTabelBarang(AppState.barang);
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
@@ -154,7 +192,7 @@ export async function handleFormSubmitPengguna(e) {
             tampilkanNotifikasi(result.message, 'sukses');
             formPengguna.reset();
             keluarModeEditPengguna();
-            await muatSemuaDataAwal();
+            await muatSemuaDataAwal(); // Refresh data pengguna
             renderTabelPengguna();
         } else {
             tampilkanNotifikasi('Gagal: ' + result.message, 'error');
@@ -218,8 +256,9 @@ export async function prosesTransaksi() {
         if (result.status === 'sukses') {
             document.getElementById('menu-transaksi').classList.add('hidden');
             tampilkanStruk(dataUntukKirim, result.idTransaksi);
-            AppState.barang = [];
-            AppState.laporan = [];
+            // KITA TIDAK MENGOSONGKAN BARANG DI SINI AGAR TIDAK PERLU REFRESH
+            // Cukup tandai bahwa laporan perlu di-refresh nanti
+            AppState.laporan = []; 
         } else {
             tampilkanNotifikasi(result.message, 'error');
             btnProsesTransaksi.disabled = false;
@@ -230,11 +269,6 @@ export async function prosesTransaksi() {
     } finally {
         btnProsesTransaksi.textContent = 'Proses Transaksi';
     }
-}
-
-export function muatLaporan() {
-    populasiFilterKasir();
-    renderTabelLaporan([]);
 }
 
 export async function batalkanTransaksiApi(idTransaksi) {
