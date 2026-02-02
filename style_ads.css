@@ -127,6 +127,24 @@ th { font-weight: 600; }
 .password-wrapper { position: relative; display: flex; flex-direction: column; }
 .password-wrapper .input-container { position: relative; display: flex; align-items: center; }
 .password-wrapper input { padding-right: 40px; }
+.toggle-password { 
+    position: absolute; 
+    right: 15px; 
+    /* PERBAIKAN CSS: Reset top dan gunakan bottom untuk mensejajarkan dengan input */
+    top: auto; 
+    bottom: 10px; /* Jarak dari bawah wrapper, sesuai padding input */
+    transform: none; /* Hilangkan centering otomatis yang terganggu label */
+    
+    cursor: pointer; 
+    user-select: none; 
+    font-size: 1.2em; 
+    color: #777; 
+    background: none; 
+    border: none; 
+    padding: 0; 
+}
+.password-wrapper input { padding-right: 40px; }
+.password-wrapper .input-container { position: relative; display: flex; align-items: center; }
 .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 1.2em; color: #777; background: none; border: none; padding: 0; }
 .tabel-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
 .tabel-controls input { flex-grow: 1; }
