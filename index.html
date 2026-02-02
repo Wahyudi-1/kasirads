@@ -46,13 +46,15 @@
         </nav>
     
         <main>
-            <!-- === PERBAIKAN: Wadah untuk Scanner Ditambahkan Di Sini === -->
+            <!-- Wadah untuk Scanner -->
             <div id="scanner-container" class="hidden">
                 <div id="scanner-viewfinder"></div>
                 <button id="btn-close-scanner">Tutup</button>
             </div>
 
             <div id="notifikasi" class="hidden"></div>
+            
+            <!-- Area Struk (Cetak) -->
             <div id="area-struk" class="hidden">
                 <div id="struk-content"></div>
                 <div class="struk-actions">
@@ -70,7 +72,6 @@
                     <form id="form-barang">
                         <input type="hidden" id="ID_Barang" name="ID_Barang">
                         <div class="form-row">
-                            <!-- === PERBAIKAN: Tombol Scan Ditambahkan Di Sini === -->
                             <div class="form-group">
                                 <label for="Kode_Barang">Kode Barang</label>
                                 <div class="input-grup">
@@ -157,7 +158,6 @@
                     </div>
                     <div class="kasir-kanan">
                         <h3>Pilih Barang</h3>
-                        <!-- === PERBAIKAN: Tombol Scan Ditambahkan Di Sini === -->
                         <div class="form-group">
                             <label>1. Cari Barang</label>
                             <div class="input-grup">
@@ -214,6 +214,7 @@
                     <div class="form-actions">
                         <button id="btn-filter-laporan" type="button" style="background-color: #3498db;">Terapkan Filter</button>
                         <button id="btn-reset-filter" type="button" style="background-color: #95a5a6;">Reset Filter</button>
+                        <button id="btn-muat-ulang-laporan" type="button" style="background-color: #27ae60; color: white;">🔄 Muat Ulang Data</button>
                     </div>
                 </div>
                 <div class="tabel-container">
