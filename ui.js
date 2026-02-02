@@ -14,7 +14,6 @@ let dataBarangTerakhirRender = [];
 let html5QrCode = null;
 let scannerTargetInput = null;
 
-
 // --- FUNGSI-FUNGSI UI ---
 
 export function tampilkanNotifikasi(pesan, tipe) {
@@ -45,6 +44,7 @@ export async function checkLoginStatus() {
         appContainer.classList.remove('hidden');
         infoNamaKasir.textContent = 'Memuat data aplikasi...';
         
+        // REFACTOR: Hanya muat barang & pengguna agar cepat
         await muatSemuaDataAwal();
 
         infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
@@ -53,7 +53,9 @@ export async function checkLoginStatus() {
         } else {
             navPengguna.classList.add('hidden');
         }
-        navManajemen.click();
+        
+        // Otomatis buka tab manajemen
+        document.getElementById('nav-manajemen').click();
     } else {
         loginContainer.classList.remove('hidden');
         appContainer.classList.add('hidden');
@@ -61,7 +63,6 @@ export async function checkLoginStatus() {
 }
 
 // --- LOGIKA UNTUK FITUR SCANNER ---
-
 function onScanSuccess(decodedText, decodedResult) {
     stopScanner();
     if (scannerTargetInput) {
@@ -83,10 +84,7 @@ export function startScanner(targetInputElement) {
         html5QrCode = new Html5Qrcode("scanner-viewfinder");
     }
     scannerContainer.classList.remove('hidden');
-    const config = { 
-        fps: 10,
-        qrbox: { width: 250, height: 250 }
-    };
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
     html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
     .catch(err => {
         html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, onScanFailure)
@@ -104,8 +102,6 @@ export function stopScanner() {
     scannerContainer.classList.add('hidden');
 }
 
-// --- AKHIR LOGIKA SCANNER ---
-
 export async function handleLogin(formData) {
     const button = formLogin.querySelector('button');
     button.disabled = true;
@@ -115,20 +111,8 @@ export async function handleLogin(formData) {
     const result = await handleLoginApi(formData);
 
     if (result.success) {
-        loginContainer.classList.add('hidden');
-        appContainer.classList.remove('hidden');
-        infoNamaKasir.textContent = 'Memuat data aplikasi...'; 
-        
-        await muatSemuaDataAwal();
-        
-        const userData = AppState.currentUser;
-        infoNamaKasir.textContent = `Kasir: ${userData.Nama_Lengkap}`;
-        if (userData.Role === 'admin') {
-            navPengguna.classList.remove('hidden');
-        } else {
-            navPengguna.classList.add('hidden');
-        }
-        navManajemen.click();
+        // Setelah login API sukses, jalankan checkLoginStatus yang akan memanggil muatSemuaDataAwal
+        checkLoginStatus();
     } else {
         loginStatus.textContent = result.message;
         button.disabled = false;
@@ -176,9 +160,7 @@ export function masukModeEdit(dataBarang) {
     AppState.modeEdit.barang = true;
     formBarang.scrollIntoView({ behavior: 'smooth' });
     for (const key in dataBarang) {
-        if (formBarang.elements[key]) {
-            formBarang.elements[key].value = dataBarang[key];
-        }
+        if (formBarang.elements[key]) formBarang.elements[key].value = dataBarang[key];
     }
     btnTambah.classList.add('hidden');
     btnSimpan.classList.remove('hidden');
@@ -238,32 +220,25 @@ export function keluarModeEditPengguna() {
     btnBatalPengguna.classList.add('hidden');
 }
 
-// === FUNGSI YANG DIPERBAIKI (LOGIKA PENCARIAN CERDAS DI HALAMAN KASIR) ===
 export function cariBarang() {
     const query = inputCari.value.toLowerCase().trim();
-    
     if (query.length === 0) {
         hasilPencarianDiv.classList.add('hidden');
         hasilPencarianDiv.innerHTML = '';
         return;
     }
-
-    // 1. Prioritaskan pencarian dengan KODE BARANG yang persis
+    // 1. Prioritas kode persis
     const exactMatch = AppState.barang.find(item => String(item.Kode_Barang).toLowerCase() === query);
     if (exactMatch) {
-        // Jika ditemukan, langsung pilih barang itu dan lewati daftar pencarian
         pilihBarang(exactMatch);
-        return; // Hentikan fungsi di sini
+        return;
     }
-
-    // 2. Jika tidak ada kode yang persis, lanjutkan dengan pencarian parsial (nama atau kode)
-    // Minimal 2 karakter untuk pencarian parsial agar tidak terlalu berat
+    // 2. Pencarian parsial
     if (query.length < 2) {
         hasilPencarianDiv.classList.add('hidden');
         hasilPencarianDiv.innerHTML = '';
         return;
     }
-
     const hasilFilter = AppState.barang.filter(item => {
         const kode = item.Kode_Barang ? String(item.Kode_Barang).toLowerCase() : '';
         const nama = item.Nama_Barang ? String(item.Nama_Barang).toLowerCase() : '';
@@ -297,11 +272,10 @@ export function pilihBarang(item) {
     if (item.Harga_Karton > 0 && item.Pcs_Per_Karton > 0) {
         selectSatuanKasir.add(new Option(`Karton / Sak - ${formatRupiah(item.Harga_Karton)}`, 'Karton'));
     }
-    // Hapus input pencarian dan sembunyikan hasilnya setelah barang dipilih
     inputCari.value = '';
     hasilPencarianDiv.classList.add('hidden');
     inputJumlahKasir.value = 1;
-    inputJumlahKasir.focus(); // Langsung fokus ke input jumlah
+    inputJumlahKasir.focus();
 }
 
 export function handleTambahKeKeranjang(e) {
@@ -310,6 +284,7 @@ export function handleTambahKeKeranjang(e) {
     const jumlahDiminta = parseFloat(inputJumlahKasir.value);
     const satuanDiminta = selectSatuanKasir.value;
     const pcsDiKeranjang = AppState.keranjang.filter(item => item.idBarang === itemData.ID_Barang).reduce((total, item) => total + item.jumlahPcs, 0);
+    
     let pcsAkanDitambah = 0;
     if (satuanDiminta === 'Pcs') pcsAkanDitambah = jumlahDiminta;
     else if (satuanDiminta === 'Lusin') pcsAkanDitambah = jumlahDiminta * itemData.Pcs_Per_Lusin;
@@ -384,6 +359,7 @@ export function updateKuantitasKeranjang(index, jumlahBaru) {
     }
     const stokAwal = itemDataAsli.Stok_Pcs;
     const pcsLainDiKeranjang = AppState.keranjang.filter((_, i) => i !== index && AppState.keranjang[i].idBarang === item.idBarang).reduce((total, itemLain) => total + itemLain.jumlahPcs, 0);
+    
     let pcsDimintaSekarang = 0;
     if (item.satuan === 'Pcs') pcsDimintaSekarang = jumlahBaru;
     else if (item.satuan === 'Lusin') pcsDimintaSekarang = jumlahBaru * item.dataAsli.Pcs_Per_Lusin;
@@ -637,6 +613,13 @@ export function terapkanFilterLaporan() {
 
 export function renderTabelLaporan(data) {
     tabelLaporanBody.innerHTML = '';
+    
+    // Penanganan jika data kosong (belum dimuat)
+    if (!data || data.length === 0) {
+        tabelLaporanBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data laporan. Coba tekan tombol "Muat Ulang Data".</td></tr>';
+        return;
+    }
+
     data.forEach(trx => {
         const detailBarang = JSON.parse(trx.Detail_Barang_JSON).map(item => `${item.namaBarang} (${item.jumlah} ${terjemahkanSatuan(item.satuan)})`).join('<br>');
         const tanggalObj = new Date(trx.Timestamp_Transaksi);
