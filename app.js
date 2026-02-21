@@ -7,7 +7,7 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 
 // --- Konfigurasi Global & State Aplikasi ---
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhue9eY4KEOD9SCm1Wdbq0Md1wSQVyxCbkdAnI9lLoOg9Kjljf43XXMlaAfj_o-NCX/exec";
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQZV3swjmSJXEyM4JR2Bboqhs8qLwWO669md_WSYguRIpz3q_s9YcfAv5mx_4_kKtr/exec";
 
 export const API_ACTIONS = {
     LOGIN: 'loginUser', 
